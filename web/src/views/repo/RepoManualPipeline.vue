@@ -23,7 +23,7 @@
               :id="id"
               :model-value="getStringValue(name)"
               :options="input.options.map((option) => ({ text: option, value: option }))"
-              :placeholder="input.required ? undefined : '-'"
+              :placeholder="getStringValue(name) === '' ? '-' : undefined"
               @update:model-value="setTypedValue(name, $event)"
             />
             <TextField
@@ -115,7 +115,9 @@ const loadingManualInputs = ref(false);
 const initialized = ref(false);
 let manualInputsRequest = 0;
 
-const manualInputEntries = computed(() => Object.entries(manualInputs.value));
+const manualInputEntries = computed(() =>
+  Object.entries(manualInputs.value).sort(([left], [right]) => left.localeCompare(right)),
+);
 const isVariablesValid = ref(true);
 
 const areRequiredInputsValid = computed(() =>
@@ -166,8 +168,8 @@ onMounted(async () => {
     value: e,
   }));
   payload.value.branch = repo.value.default_branch || data[0] || 'main';
-  initialized.value = true;
   await loadManualInputs(payload.value.branch);
+  initialized.value = true;
   loading.value = false;
 });
 
