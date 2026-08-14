@@ -28,8 +28,10 @@ const (
 // ParseBytes parses the configuration from bytes b.
 func ParseBytes(b []byte) (*types.Workflow, error) {
 	out := new(types.Workflow)
-	err := Unmarshal(b, out)
-	if err != nil {
+	if err := Unmarshal(b, out); err != nil {
+		return nil, err
+	}
+	if err := out.Manual.NormalizeAndValidate(); err != nil {
 		return nil, err
 	}
 	return out, nil
