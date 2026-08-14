@@ -1,0 +1,40 @@
+FROM docker.io/golang:1.26-alpine AS golang_image
+FROM docker.io/node:24-alpine AS build
+
+RUN apk add --no-cache --update make gcc binutils-gold musl-dev git && \
+    apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main protoc && \
+    corepack enable
+
+COPY --from=golang_image /usr/local/go /usr/local/go
+ENV PATH=$PATH:/usr/local/go/bin
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV COREPACK_ENABLE_AUTO_PIN=0
+ENV GOPATH=/tmp/go
+ENV HOME=/tmp/home
+
+WORKDIR /build
+COPY . .
+
+RUN GOBIN=/usr/local/go/bin make install-tools && \
+    VERSION=lha-fork CGO_ENABLED=1 make build-server
+
+RUN addgroup -g 1000 woodpecker && \
+    adduser -D -u 1000 -G woodpecker woodpecker && \
+    mkdir -p /var/lib/woodpecker
+
+FROM scratch
+ENV GODEBUG=netdns=go
+ENV WOODPECKER_IN_CONTAINER=true
+ENV XDG_CACHE_HOME=/var/lib/woodpecker
+ENV XDG_DATA_HOME=/var/lib/woodpecker
+EXPOSE 8000 9000 80 443
+
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /build/dist/woodpecker-server /bin/woodpecker-server
+COPY --from=build /etc/passwd /etc/passwd
+COPY --from=build /etc/group /etc/group
+COPY --from=build --chown=woodpecker:woodpecker /var/lib/woodpecker /var/lib/woodpecker
+
+USER woodpecker
+HEALTHCHECK CMD ["/bin/woodpecker-server", "ping"]
+ENTRYPOINT ["/bin/woodpecker-server"]
