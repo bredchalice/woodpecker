@@ -21,7 +21,7 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
       - name: Go tests
-        run: go test ./pipeline/frontend/yaml/... ./server/api -run 'Test(ParseManual|ManualNormalize|ApplyManual)' -count=1
+        run: go test -tags test ./pipeline/frontend/yaml/... ./server/api -run 'Test(ParseManual|ManualNormalize|ApplyManual)' -count=1
       - name: UI dependencies
         working-directory: web
         run: pnpm install --frozen-lockfile
