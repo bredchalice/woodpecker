@@ -113,7 +113,7 @@ func apiRoutes(e *gin.RouterGroup) {
 					repo.GET("/manual-pipeline-inputs", session.MustPush, api.GetManualPipelineInputs)
 
 					repo.GET("/pipelines", api.GetPipelines)
-					repo.POST("/pipelines", session.MustPush, api.CreatePipeline)
+					repo.POST("/pipelines", session.MustPush, api.ValidateManualPipelineInputs, api.CreatePipeline)
 					repo.DELETE("/pipelines/:pipeline_number", session.MustRepoAdmin(), api.DeletePipeline)
 					repo.GET("/pipelines/:pipeline_number", api.GetPipeline)
 					repo.GET("/pipelines/:pipeline_number/config", api.GetPipelineConfig)
