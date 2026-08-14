@@ -14,6 +14,8 @@
 
 package types
 
+import "fmt"
+
 const (
 	ManualInputTypeString  = "string"
 	ManualInputTypeChoice  = "choice"
@@ -33,4 +35,61 @@ type ManualInput struct {
 	Required    bool     `yaml:"required,omitempty" json:"required,omitempty"`
 	Default     any      `yaml:"default,omitempty" json:"default,omitempty"`
 	Options     []string `yaml:"options,omitempty" json:"options,omitempty"`
+}
+
+// NormalizeAndValidate applies defaults and validates a manual input schema.
+func (m *Manual) NormalizeAndValidate() error {
+	for name, input := range m.Inputs {
+		if name == "" {
+			return fmt.Errorf("manual input name must not be empty")
+		}
+
+		if input.Type == "" {
+			input.Type = ManualInputTypeString
+		}
+
+		switch input.Type {
+		case ManualInputTypeString:
+			if input.Default != nil {
+				if _, ok := input.Default.(string); !ok {
+					return fmt.Errorf("manual input %q: string default must be a string", name)
+				}
+			}
+		case ManualInputTypeChoice:
+			if len(input.Options) == 0 {
+				return fmt.Errorf("manual input %q: choice requires at least one option", name)
+			}
+			if input.Default != nil {
+				defaultValue, ok := input.Default.(string)
+				if !ok {
+					return fmt.Errorf("manual input %q: choice default must be a string", name)
+				}
+				found := false
+				for _, option := range input.Options {
+					if option == defaultValue {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("manual input %q: default %q is not one of the configured options", name, defaultValue)
+				}
+			}
+		case ManualInputTypeBoolean:
+			if len(input.Options) != 0 {
+				return fmt.Errorf("manual input %q: boolean inputs cannot define options", name)
+			}
+			if input.Default != nil {
+				if _, ok := input.Default.(bool); !ok {
+					return fmt.Errorf("manual input %q: boolean default must be true or false", name)
+				}
+			}
+		default:
+			return fmt.Errorf("manual input %q: unsupported type %q", name, input.Type)
+		}
+
+		m.Inputs[name] = input
+	}
+
+	return nil
 }
