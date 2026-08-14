@@ -15,8 +15,7 @@ ENV HOME=/tmp/home
 WORKDIR /build
 COPY . .
 
-RUN GOBIN=/usr/local/go/bin make install-tools && \
-    VERSION=lha-fork CGO_ENABLED=1 make build-server
+RUN VERSION=lha-fork CGO_ENABLED=1 make build-server
 
 RUN addgroup -g 1000 woodpecker && \
     adduser -D -u 1000 -G woodpecker woodpecker && \
