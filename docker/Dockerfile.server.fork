@@ -18,7 +18,8 @@ COPY . .
 RUN VERSION=lha-fork CGO_ENABLED=1 make build-server
 
 FROM docker.io/alpine:3.23 AS runtime_files
-RUN addgroup -g 1000 woodpecker && \
+RUN apk add --no-cache ca-certificates && \
+    addgroup -g 1000 woodpecker && \
     adduser -D -u 1000 -G woodpecker woodpecker && \
     mkdir -p /var/lib/woodpecker && \
     chown -R woodpecker:woodpecker /var/lib/woodpecker
