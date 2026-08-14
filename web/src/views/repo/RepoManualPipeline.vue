@@ -165,7 +165,7 @@ onMounted(async () => {
     text: e,
     value: e,
   }));
-  payload.value.branch = repo.value.branch || data[0] || 'main';
+  payload.value.branch = repo.value.default_branch || data[0] || 'main';
   initialized.value = true;
   await loadManualInputs(payload.value.branch);
   loading.value = false;
