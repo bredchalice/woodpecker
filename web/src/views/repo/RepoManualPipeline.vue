@@ -10,9 +10,10 @@
         <template v-for="[name, input] in manualInputEntries" :key="name">
           <Checkbox
             v-if="input.type === 'boolean'"
-            v-model="typedValues[name] as boolean"
+            :model-value="getBooleanValue(name)"
             :label="formatInputName(name)"
             :description="input.description"
+            @update:model-value="setTypedValue(name, $event)"
           />
 
           <InputField v-else v-slot="{ id }" :label="formatInputName(name)">
@@ -20,11 +21,17 @@
             <SelectField
               v-if="input.type === 'choice'"
               :id="id"
-              v-model="typedValues[name] as string"
+              :model-value="getStringValue(name)"
               :options="input.options.map((option) => ({ text: option, value: option }))"
               :placeholder="input.required ? undefined : '-'"
+              @update:model-value="setTypedValue(name, $event)"
             />
-            <TextField v-else :id="id" v-model="typedValues[name] as string" />
+            <TextField
+              v-else
+              :id="id"
+              :model-value="getStringValue(name)"
+              @update:model-value="setTypedValue(name, $event)"
+            />
           </InputField>
         </template>
       </div>
@@ -114,7 +121,7 @@ const isVariablesValid = ref(true);
 const areRequiredInputsValid = computed(() =>
   manualInputEntries.value.every(([name, input]) => {
     if (!input.required || input.type === 'boolean') return true;
-    return String(typedValues.value[name] ?? '').trim() !== '';
+    return getStringValue(name).trim() !== '';
   }),
 );
 
@@ -125,11 +132,14 @@ const isFormValid = computed(() => {
 const pipelineOptions = computed(() => {
   const typedVariables: Record<string, string> = {};
   for (const [name, input] of manualInputEntries.value) {
-    const value = typedValues.value[name];
     if (input.type === 'boolean') {
-      typedVariables[name] = String(value ?? false);
-    } else if (value !== undefined && value !== '') {
-      typedVariables[name] = String(value);
+      typedVariables[name] = String(getBooleanValue(name));
+      continue;
+    }
+
+    const value = getStringValue(name);
+    if (value !== '') {
+      typedVariables[name] = value;
     }
   }
 
@@ -169,6 +179,19 @@ watch(
     }
   },
 );
+
+function getStringValue(name: string): string {
+  const value = typedValues.value[name];
+  return typeof value === 'string' ? value : '';
+}
+
+function getBooleanValue(name: string): boolean {
+  return typedValues.value[name] === true;
+}
+
+function setTypedValue(name: string, value: string | boolean) {
+  typedValues.value[name] = value;
+}
 
 function formatInputName(name: string): string {
   return name
