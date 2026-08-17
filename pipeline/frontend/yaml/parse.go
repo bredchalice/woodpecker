@@ -29,8 +29,10 @@ const (
 func ParseBytes(b []byte) (*types.Workflow, error) {
 	parser := xyaml.NewParser(xyaml.WithDepth(maxMergeDepth))
 	out := new(types.Workflow)
-	err := parser.Unmarshal(b, out)
-	if err != nil {
+	if err := parser.Unmarshal(b, out); err != nil {
+		return nil, err
+	}
+	if err := out.Manual.NormalizeAndValidate(); err != nil {
 		return nil, err
 	}
 	return out, nil
