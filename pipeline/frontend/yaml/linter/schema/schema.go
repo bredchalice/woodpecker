@@ -17,6 +17,7 @@ package schema
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -25,6 +26,8 @@ import (
 	"codeberg.org/6543/xyaml/v2"
 	"github.com/xeipuuv/gojsonschema"
 	"go.yaml.in/yaml/v4"
+
+	pipelineyaml "go.woodpecker-ci.org/woodpecker/v3/pipeline/frontend/yaml"
 )
 
 //go:embed schema.json
@@ -40,6 +43,11 @@ func Lint(r io.Reader) ([]gojsonschema.ResultError, error) {
 		return nil, fmt.Errorf("failed to load yml file %w", err)
 	}
 
+	// Validate the LHA-only typed manual input block through the normal parser.
+	if _, err := pipelineyaml.ParseBytes(rBytes); err != nil {
+		return nil, fmt.Errorf("failed to parse config %w", err)
+	}
+
 	// resolve sequence merges
 	yamlDoc := new(yaml.Node)
 	if err := xyaml.Unmarshal(rBytes, yamlDoc); err != nil {
@@ -50,6 +58,19 @@ func Lint(r io.Reader) ([]gojsonschema.ResultError, error) {
 	jsonDoc, err := yaml2json.ConvertNode(yamlDoc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml %w", err)
+	}
+
+	// The upstream v3.17 schema does not know the LHA-only top-level manual
+	// extension. It has already been validated above, so remove only that
+	// extension before validating the rest of the workflow against upstream.
+	var document map[string]any
+	if err := json.Unmarshal(jsonDoc, &document); err != nil {
+		return nil, fmt.Errorf("failed to decode pipeline json %w", err)
+	}
+	delete(document, "manual")
+	jsonDoc, err = json.Marshal(document)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode pipeline json %w", err)
 	}
 
 	documentLoader := gojsonschema.NewBytesLoader(jsonDoc)
