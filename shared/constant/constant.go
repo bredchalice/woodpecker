@@ -37,5 +37,8 @@ var TrustedClonePlugins = []string{
 	"quay.io/woodpeckerci/plugin-git",
 }
 
-// TaskTimeout is the time till a running task is counted as dead.
-var TaskTimeout = time.Minute
+// TaskTimeout is the time till a running task is counted as dead. Keep enough
+// headroom for temporary host saturation (for example multiple concurrent
+// Docker/yarn install workloads) so a healthy workflow is not resubmitted just
+// because a few lease-extension RPCs are delayed.
+var TaskTimeout = 5 * time.Minute
