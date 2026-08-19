@@ -2,10 +2,8 @@ FROM --platform=$BUILDPLATFORM docker.io/golang:1.26 AS build
 
 WORKDIR /src
 COPY . .
-ARG TARGETOS TARGETARCH CI_COMMIT_SHA CI_COMMIT_TAG CI_COMMIT_BRANCH
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg \
-    make build-agent
+ARG TARGETOS TARGETARCH CI_COMMIT_SHA LHA_WOODPECKER_VERSION
+RUN VERSION=${LHA_WOODPECKER_VERSION} CI_COMMIT_SHA=${CI_COMMIT_SHA} make build-agent
 
 FROM docker.io/alpine:3.24
 

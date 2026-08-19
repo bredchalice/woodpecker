@@ -20,70 +20,50 @@ steps:
           echo "Refusing to move v3.17-lha/latest image aliases backwards. Tag the current v3.17-lha tip instead." >&2
           exit 1
         fi
-        printf '%s\n' "$LHA_VERSION" > .lha-version
-        printf '%s\n' "$CI_COMMIT_SHA" > .lha-source-sha
         echo "LHA Play CI release: $LHA_VERSION"
         echo "Source commit: $CI_COMMIT_SHA"
         echo "v3.17-lha tip: $BRANCH_SHA"
 
   - name: publish lha server
-    image: docker:cli
+    image: woodpeckerci/plugin-kaniko
     depends_on:
       - validate lha release tag
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      REGISTRY_PASSWORD:
+    settings:
+      registry: registry.lhaplay.com
+      repo: woodpecker/server
+      dockerfile: docker/Dockerfile.server.fork
+      context: .
+      tags:
+        - ${CI_COMMIT_SHA}
+        - ${CI_COMMIT_TAG}
+        - v3.17-lha
+        - latest
+      build_args:
+        - LHA_WOODPECKER_VERSION=${CI_COMMIT_TAG}
+      username: lha-registry
+      password:
         from_secret: registry_password
-      DOCKER_BUILDKIT: "1"
-    commands:
-      - |
-        set -eu
-        LHA_VERSION="$(cat .lha-version)"
-        SOURCE_SHA="$(cat .lha-source-sha)"
-        printf '%s' "$REGISTRY_PASSWORD" | docker login registry.lhaplay.com --username lha-registry --password-stdin
-        timeout 45m docker build --progress=plain \
-          --build-arg "LHA_WOODPECKER_VERSION=$LHA_VERSION" \
-          -f docker/Dockerfile.server.fork \
-          -t "registry.lhaplay.com/woodpecker/server:$SOURCE_SHA" \
-          -t "registry.lhaplay.com/woodpecker/server:$LHA_VERSION" \
-          -t registry.lhaplay.com/woodpecker/server:v3.17-lha \
-          -t registry.lhaplay.com/woodpecker/server:latest \
-          .
-        docker push "registry.lhaplay.com/woodpecker/server:$SOURCE_SHA"
-        docker push "registry.lhaplay.com/woodpecker/server:$LHA_VERSION"
-        docker push registry.lhaplay.com/woodpecker/server:v3.17-lha
-        docker push registry.lhaplay.com/woodpecker/server:latest
 
   - name: publish lha agent
-    image: docker:cli
+    image: woodpeckerci/plugin-kaniko
     depends_on:
       - validate lha release tag
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      REGISTRY_PASSWORD:
+    settings:
+      registry: registry.lhaplay.com
+      repo: woodpecker/agent
+      dockerfile: docker/Dockerfile.agent.alpine.multiarch
+      context: .
+      tags:
+        - ${CI_COMMIT_SHA}
+        - ${CI_COMMIT_TAG}
+        - v3.17-lha
+        - latest
+      build_args:
+        - LHA_WOODPECKER_VERSION=${CI_COMMIT_TAG}
+        - CI_COMMIT_SHA=${CI_COMMIT_SHA}
+      username: lha-registry
+      password:
         from_secret: registry_password
-      DOCKER_BUILDKIT: "1"
-    commands:
-      - |
-        set -eu
-        LHA_VERSION="$(cat .lha-version)"
-        SOURCE_SHA="$(cat .lha-source-sha)"
-        printf '%s' "$REGISTRY_PASSWORD" | docker login registry.lhaplay.com --username lha-registry --password-stdin
-        timeout 45m docker build --progress=plain \
-          --build-arg "CI_COMMIT_TAG=$LHA_VERSION" \
-          --build-arg "CI_COMMIT_SHA=$SOURCE_SHA" \
-          -f docker/Dockerfile.agent.alpine.multiarch \
-          -t "registry.lhaplay.com/woodpecker/agent:$SOURCE_SHA" \
-          -t "registry.lhaplay.com/woodpecker/agent:$LHA_VERSION" \
-          -t registry.lhaplay.com/woodpecker/agent:v3.17-lha \
-          -t registry.lhaplay.com/woodpecker/agent:latest \
-          .
-        docker push "registry.lhaplay.com/woodpecker/agent:$SOURCE_SHA"
-        docker push "registry.lhaplay.com/woodpecker/agent:$LHA_VERSION"
-        docker push registry.lhaplay.com/woodpecker/agent:v3.17-lha
-        docker push registry.lhaplay.com/woodpecker/agent:latest
 
   - name: release summary
     image: alpine:3.23
@@ -93,10 +73,8 @@ steps:
     commands:
       - |
         set -eu
-        LHA_VERSION="$(cat .lha-version)"
-        SOURCE_SHA="$(cat .lha-source-sha)"
-        echo "LHA Play CI $LHA_VERSION published from Git tag."
-        echo "Source: $SOURCE_SHA"
-        echo "Server tags: $LHA_VERSION, $SOURCE_SHA, v3.17-lha, latest"
-        echo "Agent tags:  $LHA_VERSION, $SOURCE_SHA, v3.17-lha, latest"
+        echo "LHA Play CI $CI_COMMIT_TAG published from Git tag."
+        echo "Source: $CI_COMMIT_SHA"
+        echo "Server tags: $CI_COMMIT_TAG, $CI_COMMIT_SHA, v3.17-lha, latest"
+        echo "Agent tags:  $CI_COMMIT_TAG, $CI_COMMIT_SHA, v3.17-lha, latest"
         echo "Deployment remains an explicit host-side operation."
