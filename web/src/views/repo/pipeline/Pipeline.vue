@@ -7,18 +7,20 @@
         :pipeline="pipeline!"
       />
 
-      <div class="relative flex grow basis-full items-start justify-center md:basis-auto">
-        <div v-if="pipeline!.errors?.some((e) => !e.is_warning)" class="mb-4 w-full md:mb-auto">
-          <Panel>
-            <div class="flex flex-col items-center gap-4 text-center">
-              <Icon name="status-error" class="text-wp-error-100 h-16 w-16" size="1.5rem" />
-              <span class="text-xl">{{ $t('repo.pipeline.we_got_some_errors') }}</span>
-              <Button color="red" :text="$t('repo.pipeline.show_errors')" :to="{ name: 'repo-pipeline-errors' }" />
-            </div>
-          </Panel>
+      <div class="relative flex min-w-0 grow basis-full flex-col items-stretch gap-3 md:basis-auto">
+        <div v-if="hasErrors" class="lha-ci-failure-summary">
+          <div class="lha-ci-failure-summary__icon">
+            <Icon name="status-error" class="text-wp-error-100" size="1.4rem" />
+          </div>
+          <div class="lha-ci-failure-summary__body">
+            <p class="lha-ci-kicker">Build failed</p>
+            <strong>{{ $t('repo.pipeline.we_got_some_errors') }}</strong>
+            <span>The first failed step is selected automatically so the useful log is visible immediately.</span>
+          </div>
+          <Button color="red" :text="$t('repo.pipeline.show_errors')" :to="{ name: 'repo-pipeline-errors' }" />
         </div>
 
-        <div v-else-if="pipeline!.status === 'blocked'" class="mb-4 w-full md:mb-auto">
+        <div v-if="pipeline!.status === 'blocked'" class="mb-4 w-full md:mb-auto">
           <Panel>
             <div class="flex flex-col items-center gap-4">
               <Icon name="status-blocked" size="1.5rem" class="h-16 w-16" />
@@ -89,8 +91,16 @@ const repo = requiredInject('repo');
 const repoPermissions = requiredInject('repo-permissions');
 
 const stepId = toRef(props, 'stepId');
+const hasErrors = computed(() => pipeline.value?.errors?.some((error) => !error.is_warning) ?? false);
 
-const defaultStepId = computed(() => pipeline.value?.workflows?.[0].children?.[0].pid ?? null);
+const defaultStepId = computed(() => {
+  const workflows = pipeline.value?.workflows ?? [];
+  for (const workflow of workflows) {
+    const failedStep = workflow.children?.find((step) => step.state === 'failure' || step.state === 'error');
+    if (failedStep) return failedStep.pid;
+  }
+  return workflows[0]?.children?.[0]?.pid ?? null;
+});
 
 const selectedStepId = computed({
   get() {
@@ -103,18 +113,16 @@ const selectedStepId = computed({
       }
 
       step = pipeline.value?.workflows?.reduce(
-        (prev, p) => prev || p.children?.find((c) => c.pid === id),
+        (prev, workflow) => prev || workflow.children?.find((child) => child.pid === id),
         undefined as PipelineStep | undefined,
       );
       if (step) {
         return step.pid;
       }
 
-      // return fallback if step-id is provided, but step cannot be found
       return defaultStepId.value;
     }
 
-    // is opened on >= md-screen
     if (window.innerWidth > 768) {
       return defaultStepId.value;
     }
@@ -149,3 +157,50 @@ useWPTitle(
   ]),
 );
 </script>
+
+<style scoped>
+.lha-ci-failure-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--wp-error-100) 45%, var(--lha-ci-border));
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--wp-error-100) 8%, var(--lha-ci-surface));
+}
+
+.lha-ci-failure-summary__icon {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--wp-error-100) 12%, transparent);
+}
+
+.lha-ci-failure-summary__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.lha-ci-failure-summary__body strong {
+  color: var(--wp-text-200);
+}
+
+.lha-ci-failure-summary__body span {
+  color: var(--wp-text-alt-100);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 760px) {
+  .lha-ci-failure-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+</style>

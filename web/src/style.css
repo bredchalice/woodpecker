@@ -55,6 +55,12 @@
 
   --wp-link-100: var(--color-blue-600);
   --wp-link-200: var(--color-blue-700);
+
+  --lha-ci-surface: #ffffff;
+  --lha-ci-surface-muted: #f7f8fb;
+  --lha-ci-border: #e4e7ec;
+  --lha-ci-accent: #6d5dfc;
+  --lha-ci-accent-soft: rgba(109, 93, 252, 0.1);
 }
 
 :root[data-theme='dark'] {
@@ -102,15 +108,21 @@
 
   --wp-code-inline-text-100: var(--color-gray-300);
 
-  --wp-code-100: var(--color-int-wp-secondary-700); /* #222631 */
-  --wp-code-200: var(--color-int-wp-secondary-600); /* #2a2e3a */
-  --wp-code-300: var(--color-int-wp-secondary-800); /* #1B1F28 */
+  --wp-code-100: var(--color-int-wp-secondary-700);
+  --wp-code-200: var(--color-int-wp-secondary-600);
+  --wp-code-300: var(--color-int-wp-secondary-800);
 
   --wp-code-text-100: var(--color-gray-200);
   --wp-code-text-alt-100: var(--color-gray-400);
 
   --wp-link-100: var(--color-blue-400);
   --wp-link-200: var(--color-blue-500);
+
+  --lha-ci-surface: #171a21;
+  --lha-ci-surface-muted: #1d212b;
+  --lha-ci-border: #2a303c;
+  --lha-ci-accent: #8a7cff;
+  --lha-ci-accent-soft: rgba(138, 124, 255, 0.12);
 }
 
 html,
@@ -171,4 +183,212 @@ code:not(pre > code) {
 .code-box-log {
   @apply bg-wp-code-300 text-wp-code-text-100 p-4 break-words;
   white-space: pre-wrap;
+}
+
+.lha-ci-manual-panel {
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.lha-ci-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.lha-ci-manual__header,
+.lha-ci-manual__section,
+.lha-ci-advanced,
+.lha-ci-manual__actions {
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 1rem;
+  background: var(--lha-ci-surface);
+}
+
+.lha-ci-manual__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top right, var(--lha-ci-accent-soft), transparent 38%),
+    var(--lha-ci-surface);
+}
+
+.lha-ci-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--lha-ci-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.lha-ci-manual__title {
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1.65rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.lha-ci-manual__intro {
+  max-width: 620px;
+  margin: 0.55rem 0 0;
+  color: var(--wp-text-alt-100);
+  font-size: 0.95rem;
+}
+
+.lha-ci-manual__repo {
+  display: flex;
+  min-width: 190px;
+  flex-direction: column;
+  align-self: flex-start;
+  gap: 0.2rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.75rem;
+  background: var(--lha-ci-surface-muted);
+}
+
+.lha-ci-manual__repo span,
+.lha-ci-run-summary span {
+  color: var(--wp-text-alt-100);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lha-ci-manual__repo strong,
+.lha-ci-run-summary strong {
+  color: var(--wp-text-200);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.lha-ci-manual__section {
+  padding: 1.35rem;
+}
+
+.lha-ci-manual__section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.lha-ci-manual__section-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.lha-ci-manual__section-heading h2 {
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.lha-ci-manual__step {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background: var(--lha-ci-accent-soft);
+  color: var(--lha-ci-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.lha-ci-manual__hint,
+.lha-ci-manual__validation {
+  color: var(--wp-text-alt-100);
+  font-size: 0.82rem;
+}
+
+.lha-ci-manual__inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.lha-ci-input-card {
+  min-width: 0;
+  padding: 0.9rem 1rem 0.2rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.8rem;
+  background: var(--lha-ci-surface-muted);
+}
+
+.lha-ci-input-card--boolean {
+  display: flex;
+  align-items: center;
+  padding-bottom: 0.9rem;
+}
+
+.lha-ci-run-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.lha-ci-run-summary > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  background: var(--lha-ci-surface-muted);
+}
+
+.lha-ci-advanced {
+  overflow: hidden;
+}
+
+.lha-ci-advanced > summary {
+  cursor: pointer;
+  padding: 1rem 1.25rem;
+  color: var(--wp-text-200);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.lha-ci-advanced__body {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.lha-ci-manual__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  position: sticky;
+  bottom: 1rem;
+  z-index: 10;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 760px) {
+  .lha-ci-manual__header,
+  .lha-ci-manual__section-heading,
+  .lha-ci-manual__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lha-ci-manual__repo {
+    width: 100%;
+  }
+
+  .lha-ci-manual__inputs,
+  .lha-ci-run-summary {
+    grid-template-columns: 1fr;
+  }
 }

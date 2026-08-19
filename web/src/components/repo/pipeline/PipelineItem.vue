@@ -1,44 +1,21 @@
 <template>
-  <ListItem v-if="pipeline" class="w-full p-0!">
-    <div class="flex w-11 items-center">
-      <div
-        class="h-full w-3"
-        :class="{
-          'bg-wp-state-warn-100': pipeline.status === 'pending',
-          'bg-wp-error-100 dark:bg-wp-error-200': pipelineStatusColors[pipeline.status] === 'red',
-          'bg-wp-state-neutral-100': pipelineStatusColors[pipeline.status] === 'gray',
-          'bg-wp-state-ok-100': pipelineStatusColors[pipeline.status] === 'green',
-          'bg-wp-state-info-100': pipelineStatusColors[pipeline.status] === 'blue',
-        }"
-      />
-      <div class="flex h-full w-6 flex-wrap items-center justify-between">
-        <PipelineRunningIcon v-if="pipeline.status === 'started' || pipeline.status === 'running'" />
-        <PipelineStatusIcon v-else class="mx-2 md:mx-3" :status="pipeline.status" />
-      </div>
+  <ListItem v-if="pipeline" class="lha-ci-pipeline-item w-full p-0!">
+    <div class="lha-ci-pipeline-item__status" :data-status="semanticStatus">
+      <PipelineRunningIcon v-if="pipeline.status === 'started' || pipeline.status === 'running'" />
+      <PipelineStatusIcon v-else :status="pipeline.status" />
     </div>
 
-    <div class="flex min-w-0 grow flex-wrap px-4 py-2 md:flex-nowrap">
-      <div class="hidden shrink-0 items-center md:flex">
-        <Icon v-if="pipeline.event === 'cron'" name="stopwatch" class="text-wp-text-100" />
-        <img v-else class="w-6 rounded-md" :src="pipeline.author_avatar" />
+    <div class="lha-ci-pipeline-item__body">
+      <div class="lha-ci-pipeline-item__main">
+        <div class="lha-ci-pipeline-item__headline">
+          <span class="lha-ci-pipeline-item__number">#{{ pipeline.number }}</span>
+          <span class="lha-ci-pipeline-item__semantic">{{ semanticLabel }}</span>
+        </div>
+        <RenderMarkdown class="lha-ci-pipeline-item__message" :title="message" :content="shortMessage" inline />
+        <p v-if="statusDetail" class="lha-ci-pipeline-item__detail">{{ statusDetail }}</p>
       </div>
 
-      <div class="flex w-full min-w-0 items-center md:mx-4 md:w-auto">
-        <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-        <span class="md:display-unset text-wp-text-alt-100 hidden">#{{ pipeline.number }}</span>
-        <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-        <span class="md:display-unset text-wp-text-alt-100 mx-2 hidden">-</span>
-        <RenderMarkdown
-          class="text-wp-text-100 overflow-hidden text-ellipsis whitespace-nowrap underline md:no-underline"
-          :title="message"
-          :content="shortMessage"
-          inline
-        />
-      </div>
-
-      <div
-        class="text-wp-text-100 grid w-full shrink-0 grid-flow-col grid-cols-2 grid-rows-2 gap-x-4 gap-y-2 py-2 md:ml-auto md:w-96"
-      >
+      <div class="lha-ci-pipeline-item__meta">
         <div class="flex min-w-0 items-center space-x-2">
           <span :title="pipelineEventTitle">
             <Icon v-if="pipeline.event === 'pull_request'" name="pull-request" />
@@ -46,7 +23,7 @@
             <Icon v-else-if="pipeline.event === 'pull_request_metadata'" name="pull-request-metadata" />
             <Icon v-else-if="pipeline.event === 'deployment'" name="deployment" />
             <Icon v-else-if="pipeline.event === 'tag' || pipeline.event === 'release'" name="tag" />
-            <Icon v-else-if="pipeline.event === 'cron'" name="branch" />
+            <Icon v-else-if="pipeline.event === 'cron'" name="stopwatch" />
             <Icon v-else-if="pipeline.event === 'manual'" name="manual-pipeline" />
             <Icon v-else name="branch" />
           </span>
@@ -60,9 +37,7 @@
 
         <div
           class="flex min-w-0 items-center space-x-2"
-          :title="
-            durationElapsed > 0 ? $t('repo.pipeline.duration', { duration: durationAsNumber(durationElapsed) }) : ''
-          "
+          :title="durationElapsed > 0 ? $t('repo.pipeline.duration', { duration: durationAsNumber(durationElapsed) }) : ''"
         >
           <Icon name="duration" />
           <span class="truncate">{{ duration }}</span>
@@ -84,7 +59,6 @@ import { useI18n } from 'vue-i18n';
 import Icon from '~/components/atomic/Icon.vue';
 import ListItem from '~/components/atomic/ListItem.vue';
 import RenderMarkdown from '~/components/atomic/RenderMarkdown.vue';
-import { pipelineStatusColors } from '~/components/repo/pipeline/pipeline-status';
 import PipelineRunningIcon from '~/components/repo/pipeline/PipelineRunningIcon.vue';
 import PipelineStatusIcon from '~/components/repo/pipeline/PipelineStatusIcon.vue';
 import { useDate } from '~/compositions/useDate';
@@ -100,6 +74,44 @@ const { durationAsNumber } = useDate();
 
 const pipeline = toRef(props, 'pipeline');
 const { since, duration, durationElapsed, message, shortMessage, prettyRef, created } = usePipeline(pipeline);
+
+const semanticStatus = computed(() => {
+  if (pipeline.value.status === 'killed' && pipeline.value.cancel_info?.superseded_by) return 'superseded';
+  if (pipeline.value.status === 'killed' || pipeline.value.status === 'canceled') return 'cancelled';
+  if (pipeline.value.status === 'success') return 'passed';
+  if (pipeline.value.status === 'failure' || pipeline.value.status === 'error') return 'failed';
+  if (pipeline.value.status === 'started' || pipeline.value.status === 'running') return 'running';
+  if (pipeline.value.status === 'pending') return 'queued';
+  return 'neutral';
+});
+
+const semanticLabel = computed(() => {
+  switch (semanticStatus.value) {
+    case 'superseded':
+      return 'Superseded';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'passed':
+      return 'Passed';
+    case 'failed':
+      return 'Failed';
+    case 'running':
+      return 'Running';
+    case 'queued':
+      return 'Queued';
+    default:
+      return pipeline.value.status;
+  }
+});
+
+const statusDetail = computed(() => {
+  const info = pipeline.value.cancel_info;
+  if (pipeline.value.status !== 'killed' || !info) return '';
+  if (info.superseded_by) return `Replaced by build #${info.superseded_by}. No action required.`;
+  if (info.canceled_by_user) return `Cancelled by ${info.canceled_by_user}.`;
+  if (info.canceled_by_step) return `Cancelled by step ${info.canceled_by_step}.`;
+  return '';
+});
 
 const pipelineEventTitle = computed(() => {
   switch (pipeline.value.event) {
@@ -124,3 +136,107 @@ const pipelineEventTitle = computed(() => {
   }
 });
 </script>
+
+<style scoped>
+.lha-ci-pipeline-item {
+  overflow: hidden;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.9rem;
+  background: var(--lha-ci-surface);
+}
+
+.lha-ci-pipeline-item__status {
+  display: flex;
+  width: 3.25rem;
+  min-height: 6rem;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--lha-ci-border);
+  background: var(--lha-ci-surface-muted);
+}
+
+.lha-ci-pipeline-item__status[data-status='running'] {
+  background: var(--lha-ci-accent-soft);
+}
+
+.lha-ci-pipeline-item__status[data-status='failed'] {
+  background: color-mix(in srgb, var(--wp-error-100) 12%, transparent);
+}
+
+.lha-ci-pipeline-item__status[data-status='passed'] {
+  background: color-mix(in srgb, var(--wp-state-ok-100) 12%, transparent);
+}
+
+.lha-ci-pipeline-item__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.1rem;
+}
+
+.lha-ci-pipeline-item__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.lha-ci-pipeline-item__headline {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.3rem;
+}
+
+.lha-ci-pipeline-item__number {
+  color: var(--wp-text-alt-100);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.lha-ci-pipeline-item__semantic {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: var(--lha-ci-surface-muted);
+  color: var(--wp-text-200);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.lha-ci-pipeline-item__message {
+  display: block;
+  overflow: hidden;
+  color: var(--wp-text-200);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lha-ci-pipeline-item__detail {
+  margin: 0.35rem 0 0;
+  color: var(--wp-text-alt-100);
+  font-size: 0.78rem;
+}
+
+.lha-ci-pipeline-item__meta {
+  display: grid;
+  width: 24rem;
+  flex-shrink: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  color: var(--wp-text-100);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .lha-ci-pipeline-item__body {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .lha-ci-pipeline-item__meta {
+    width: 100%;
+  }
+}
+</style>

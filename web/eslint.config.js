@@ -99,6 +99,21 @@ export default antfu(
     },
   },
 
+  // LHA Play CI is an internal branded surface with intentionally fixed product copy.
+  {
+    files: [
+      'src/components/layout/header/Navbar.vue',
+      'src/components/repo/pipeline/PipelineItem.vue',
+      'src/views/repo/RepoManualPipeline.vue',
+      'src/views/repo/RepoPipelines.vue',
+      'src/views/repo/pipeline/Pipeline.vue',
+      'src/views/repo/pipeline/PipelineWrapper.vue',
+    ],
+    rules: {
+      '@intlify/vue-i18n/no-raw-text': 'off',
+    },
+  },
+
   // Ignore list
   {
     ignores: [
