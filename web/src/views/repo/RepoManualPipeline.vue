@@ -1,53 +1,125 @@
 <template>
-  <Panel v-if="!loading">
-    <form @submit.prevent="triggerManualPipeline">
-      <span class="text-wp-text-100 text-xl">{{ $t('repo.manual_pipeline.title') }}</span>
-      <InputField v-slot="{ id }" :label="$t('repo.manual_pipeline.select_branch')">
-        <SelectField :id="id" v-model="payload.branch" :options="branches" required />
-      </InputField>
+  <Panel v-if="!loading" class="lha-ci-manual-panel">
+    <form class="lha-ci-manual" @submit.prevent="triggerManualPipeline">
+      <header class="lha-ci-manual__header">
+        <div>
+          <p class="lha-ci-kicker">LHA Play CI</p>
+          <h1 class="lha-ci-manual__title">{{ $t('repo.manual_pipeline.title') }}</h1>
+          <p class="lha-ci-manual__intro">
+            Choose the source branch and only the inputs this pipeline actually supports. Advanced variables are optional.
+          </p>
+        </div>
+        <div class="lha-ci-manual__repo">
+          <span>Repository</span>
+          <strong>{{ repo.full_name }}</strong>
+        </div>
+      </header>
 
-      <div v-if="manualInputEntries.length" class="mb-4">
-        <template v-for="[name, input] in manualInputEntries" :key="name">
-          <Checkbox
-            v-if="input.type === 'boolean'"
-            :model-value="getBooleanValue(name)"
-            :label="formatInputName(name)"
-            :description="input.description"
-            @update:model-value="setTypedValue(name, $event)"
-          />
+      <section class="lha-ci-manual__section">
+        <div class="lha-ci-manual__section-heading">
+          <div>
+            <span class="lha-ci-manual__step">01</span>
+            <h2>Source</h2>
+          </div>
+          <span class="lha-ci-manual__hint">Select the commit source for this run.</span>
+        </div>
 
-          <InputField v-else v-slot="{ id }" :label="formatInputName(name)">
-            <span v-if="input.description" class="text-wp-text-alt-100 mb-2 text-sm">{{ input.description }}</span>
-            <SelectField
-              v-if="input.type === 'choice'"
+        <InputField v-slot="{ id }" :label="$t('repo.manual_pipeline.select_branch')">
+          <SelectField :id="id" v-model="payload.branch" :options="branches" required />
+        </InputField>
+      </section>
+
+      <section v-if="manualInputEntries.length" class="lha-ci-manual__section">
+        <div class="lha-ci-manual__section-heading">
+          <div>
+            <span class="lha-ci-manual__step">02</span>
+            <h2>Build options</h2>
+          </div>
+          <span class="lha-ci-manual__hint">{{ manualInputEntries.length }} pipeline input{{ manualInputEntries.length === 1 ? '' : 's' }}</span>
+        </div>
+
+        <div class="lha-ci-manual__inputs">
+          <template v-for="[name, input] in manualInputEntries" :key="name">
+            <div class="lha-ci-input-card" :class="{ 'lha-ci-input-card--boolean': input.type === 'boolean' }">
+              <Checkbox
+                v-if="input.type === 'boolean'"
+                :model-value="getBooleanValue(name)"
+                :label="formatInputName(name)"
+                :description="input.description"
+                @update:model-value="setTypedValue(name, $event)"
+              />
+
+              <InputField v-else v-slot="{ id }" :label="formatInputName(name)">
+                <span v-if="input.description" class="text-wp-text-alt-100 mb-2 text-sm">{{ input.description }}</span>
+                <SelectField
+                  v-if="input.type === 'choice'"
+                  :id="id"
+                  :model-value="getStringValue(name)"
+                  :options="input.options.map((option) => ({ text: option, value: option }))"
+                  :placeholder="getStringValue(name) === '' ? '-' : undefined"
+                  @update:model-value="setTypedValue(name, $event)"
+                />
+                <TextField
+                  v-else
+                  :id="id"
+                  :model-value="getStringValue(name)"
+                  @update:model-value="setTypedValue(name, $event)"
+                />
+              </InputField>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <section class="lha-ci-manual__section lha-ci-manual__summary">
+        <div class="lha-ci-manual__section-heading">
+          <div>
+            <span class="lha-ci-manual__step">03</span>
+            <h2>Run summary</h2>
+          </div>
+        </div>
+
+        <div class="lha-ci-run-summary">
+          <div>
+            <span>Branch</span>
+            <strong>{{ payload.branch }}</strong>
+          </div>
+          <div>
+            <span>Configured inputs</span>
+            <strong>{{ configuredInputCount }}</strong>
+          </div>
+          <div>
+            <span>Action</span>
+            <strong>Start pipeline</strong>
+          </div>
+        </div>
+      </section>
+
+      <details class="lha-ci-advanced">
+        <summary>Advanced variables</summary>
+        <div class="lha-ci-advanced__body">
+          <InputField v-slot="{ id }" :label="$t('repo.manual_pipeline.variables.title')">
+            <span class="text-wp-text-alt-100 mb-2 text-sm">{{ $t('repo.manual_pipeline.variables.desc') }}</span>
+            <KeyValueEditor
               :id="id"
-              :model-value="getStringValue(name)"
-              :options="input.options.map((option) => ({ text: option, value: option }))"
-              :placeholder="getStringValue(name) === '' ? '-' : undefined"
-              @update:model-value="setTypedValue(name, $event)"
-            />
-            <TextField
-              v-else
-              :id="id"
-              :model-value="getStringValue(name)"
-              @update:model-value="setTypedValue(name, $event)"
+              v-model="payload.variables"
+              :key-placeholder="$t('repo.manual_pipeline.variables.name')"
+              :value-placeholder="$t('repo.manual_pipeline.variables.value')"
+              :delete-title="$t('repo.manual_pipeline.variables.delete')"
+              @update:is-valid="isVariablesValid = $event"
             />
           </InputField>
-        </template>
-      </div>
+        </div>
+      </details>
 
-      <InputField v-slot="{ id }" :label="$t('repo.manual_pipeline.variables.title')">
-        <span class="text-wp-text-alt-100 mb-2 text-sm">{{ $t('repo.manual_pipeline.variables.desc') }}</span>
-        <KeyValueEditor
-          :id="id"
-          v-model="payload.variables"
-          :key-placeholder="$t('repo.manual_pipeline.variables.name')"
-          :value-placeholder="$t('repo.manual_pipeline.variables.value')"
-          :delete-title="$t('repo.manual_pipeline.variables.delete')"
-          @update:is-valid="isVariablesValid = $event"
-        />
-      </InputField>
-      <Button type="submit" :text="$t('repo.manual_pipeline.trigger')" :disabled="!isFormValid" />
+      <footer class="lha-ci-manual__actions">
+        <div class="lha-ci-manual__validation">
+          <span v-if="loadingManualInputs">Loading pipeline inputs…</span>
+          <span v-else-if="!areRequiredInputsValid">Complete the required build options before starting.</span>
+          <span v-else>Ready to run {{ payload.branch }}.</span>
+        </div>
+        <Button type="submit" :text="$t('repo.manual_pipeline.trigger')" :disabled="!isFormValid" />
+      </footer>
     </form>
   </Panel>
   <div v-else class="text-wp-text-100 flex justify-center">
@@ -126,6 +198,18 @@ const areRequiredInputsValid = computed(() =>
     return getStringValue(name).trim() !== '';
   }),
 );
+
+const configuredInputCount = computed(() => {
+  let count = Object.keys(payload.value.variables).length;
+  for (const [name, input] of manualInputEntries.value) {
+    if (input.type === 'boolean') {
+      if (getBooleanValue(name)) count += 1;
+      continue;
+    }
+    if (getStringValue(name).trim() !== '') count += 1;
+  }
+  return count;
+});
 
 const isFormValid = computed(() => {
   return payload.value.branch !== '' && isVariablesValid.value && areRequiredInputsValid.value && !loadingManualInputs.value;
@@ -248,7 +332,6 @@ async function triggerManualPipeline() {
   emit('close');
 
   if (typeof pipeline == 'string') {
-    // if this is a string (http 204) there is no workflow to run with the 'manual' event
     await router.push({
       name: 'repo',
     });
