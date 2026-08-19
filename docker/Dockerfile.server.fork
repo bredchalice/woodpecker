@@ -12,10 +12,12 @@ ENV COREPACK_ENABLE_AUTO_PIN=0
 ENV GOPATH=/tmp/go
 ENV HOME=/tmp/home
 
+ARG LHA_WOODPECKER_VERSION=v3.17-lha-1.0.0
+
 WORKDIR /build
 COPY . .
 
-RUN VERSION=v3.17-lha CGO_ENABLED=1 make build-server
+RUN VERSION=${LHA_WOODPECKER_VERSION} CGO_ENABLED=1 make build-server
 
 FROM docker.io/alpine:3.23 AS runtime_files
 RUN apk add --no-cache ca-certificates && \
