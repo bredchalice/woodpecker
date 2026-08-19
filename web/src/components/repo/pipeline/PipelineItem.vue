@@ -136,3 +136,107 @@ const pipelineEventTitle = computed(() => {
   }
 });
 </script>
+
+<style scoped>
+.lha-ci-pipeline-item {
+  overflow: hidden;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.9rem;
+  background: var(--lha-ci-surface);
+}
+
+.lha-ci-pipeline-item__status {
+  display: flex;
+  width: 3.25rem;
+  min-height: 6rem;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--lha-ci-border);
+  background: var(--lha-ci-surface-muted);
+}
+
+.lha-ci-pipeline-item__status[data-status='running'] {
+  background: var(--lha-ci-accent-soft);
+}
+
+.lha-ci-pipeline-item__status[data-status='failed'] {
+  background: color-mix(in srgb, var(--wp-error-100) 12%, transparent);
+}
+
+.lha-ci-pipeline-item__status[data-status='passed'] {
+  background: color-mix(in srgb, var(--wp-state-ok-100) 12%, transparent);
+}
+
+.lha-ci-pipeline-item__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.1rem;
+}
+
+.lha-ci-pipeline-item__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.lha-ci-pipeline-item__headline {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.3rem;
+}
+
+.lha-ci-pipeline-item__number {
+  color: var(--wp-text-alt-100);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.lha-ci-pipeline-item__semantic {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: var(--lha-ci-surface-muted);
+  color: var(--wp-text-200);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.lha-ci-pipeline-item__message {
+  display: block;
+  overflow: hidden;
+  color: var(--wp-text-200);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lha-ci-pipeline-item__detail {
+  margin: 0.35rem 0 0;
+  color: var(--wp-text-alt-100);
+  font-size: 0.78rem;
+}
+
+.lha-ci-pipeline-item__meta {
+  display: grid;
+  width: 24rem;
+  flex-shrink: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  color: var(--wp-text-100);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .lha-ci-pipeline-item__body {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .lha-ci-pipeline-item__meta {
+    width: 100%;
+  }
+}
+</style>
