@@ -39,7 +39,7 @@ steps:
     environment:
       WOODPECKER_DISABLE_UPDATE_CHECK: true
       WOODPECKER_LINT_STRICT: true
-      WOODPECKER_PLUGINS_PRIVILEGED: 'docker.io/woodpeckerci/plugin-docker-buildx'
+      WOODPECKER_PLUGINS_PRIVILEGED: 'docker.io/woodpeckerci/plugin-docker-buildx:6.1.0'
     when:
       - event: pull_request
         path:
