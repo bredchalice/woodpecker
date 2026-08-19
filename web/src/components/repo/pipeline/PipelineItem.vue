@@ -77,7 +77,7 @@ const { since, duration, durationElapsed, message, shortMessage, prettyRef, crea
 
 const semanticStatus = computed(() => {
   if (pipeline.value.status === 'killed' && pipeline.value.cancel_info?.superseded_by) return 'superseded';
-  if (pipeline.value.status === 'killed') return 'cancelled';
+  if (pipeline.value.status === 'killed' || pipeline.value.status === 'canceled') return 'cancelled';
   if (pipeline.value.status === 'success') return 'passed';
   if (pipeline.value.status === 'failure' || pipeline.value.status === 'error') return 'failed';
   if (pipeline.value.status === 'started' || pipeline.value.status === 'running') return 'running';
