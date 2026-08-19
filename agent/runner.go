@@ -29,11 +29,13 @@ import (
 	pipeline_errors "go.woodpecker-ci.org/woodpecker/v3/pipeline/errors"
 	pipeline_runtime "go.woodpecker-ci.org/woodpecker/v3/pipeline/runtime"
 	"go.woodpecker-ci.org/woodpecker/v3/rpc"
-	"go.woodpecker-ci.org/woodpecker/v3/shared/constant"
 	"go.woodpecker-ci.org/woodpecker/v3/shared/utils"
 )
 
-const shutdownTimeout = time.Second * 5
+const (
+	shutdownTimeout          = time.Second * 5
+	taskLeaseRefreshInterval = time.Second * 15
+)
 
 type Runner struct {
 	client   rpc.Peer
@@ -130,15 +132,22 @@ func (r *Runner) Run(runnerCtx context.Context) error {
 		}
 	}()
 
-	// Periodically extend the workflow lease while running
+	// Keep the server-side workflow lease alive independently of the server's
+	// compiled stale-task timeout. Server and agent versions can overlap during
+	// rolling/self-hosted upgrades, so deriving this cadence from TaskTimeout
+	// makes otherwise compatible builds kill active workflows when their
+	// TaskTimeout constants differ.
 	go func() {
+		ticker := time.NewTicker(taskLeaseRefreshInterval)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-workflowCtx.Done():
 				logger.Debug().Msg("workflow context done")
 				return
 
-			case <-time.After(constant.TaskTimeout / 3):
+			case <-ticker.C:
 				logger.Debug().Msg("renewing workflow lease")
 				if err := r.client.Extend(workflowCtx, workflow.ID); err != nil {
 					logger.Error().Err(err).Msg("failed to extend workflow lease")
