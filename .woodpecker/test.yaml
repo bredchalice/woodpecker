@@ -1,24 +1,18 @@
 variables:
   - &golang_image 'docker.io/golang:1.26'
   - &when
-    - path: &when_path # related config files
+    - path: &when_path
         - '.woodpecker/test.yaml'
         - '.golangci.yaml'
-        # go source code
         - '**/*.go'
         - 'go.*'
-        # schema changes
         - 'pipeline/schema/**'
-        # tools updates
         - Makefile
         - 'codecov.yaml'
       event: pull_request
 
 when:
   - event: pull_request
-  - event: push
-    branch: ${CI_REPO_DEFAULT_BRANCH}
-    path: *when_path
 
 steps:
   vendor:
@@ -26,9 +20,10 @@ steps:
     commands:
       - go mod vendor
     when:
-      path:
-        - <<: *when_path
-        - '.woodpecker/**'
+      - event: pull_request
+        path:
+          - <<: *when_path
+          - '.woodpecker/**'
 
   lint-pipeline:
     depends_on:
@@ -50,8 +45,7 @@ steps:
     commands:
       - mkdir -p web/dist/
       - echo "test" > web/dist/index.html
-    when:
-      - path: *when_path
+    when: *when
 
   lint:
     depends_on:
@@ -74,7 +68,7 @@ steps:
   lint-license-header:
     image: *golang_image
     commands:
-      - make install-addlicense # cspell:words addlicense
+      - make install-addlicense
       - bash -c 'shopt -s globstar; addlicense -check -ignore "vendor/**" -ignore cmd/server/openapi/docs.go **/*.go'
     when: *when
 
@@ -87,8 +81,7 @@ steps:
       - make test-server
       - make test-cli
       - make test-lib
-    when:
-      - path: *when_path
+    when: *when
 
   test-e2e:
     depends_on:
@@ -96,8 +89,7 @@ steps:
     image: *golang_image
     commands:
       - make test-e2e
-    when:
-      - path: *when_path
+    when: *when
 
   sqlite:
     depends_on:
@@ -107,8 +99,7 @@ steps:
       WOODPECKER_DATABASE_DRIVER: sqlite3
     commands:
       - make test-server-datastore-coverage
-    when:
-      - path: *when_path
+    when: *when
 
   postgres:
     depends_on:
@@ -116,7 +107,7 @@ steps:
     image: *golang_image
     environment:
       WOODPECKER_DATABASE_DRIVER: postgres
-      WOODPECKER_DATABASE_DATASOURCE: 'host=postgres user=postgres dbname=postgres sslmode=disable' # cspell:disable-line
+      WOODPECKER_DATABASE_DATASOURCE: 'host=postgres user=postgres dbname=postgres sslmode=disable'
     commands:
       - make test-server-datastore
     when: *when
@@ -148,8 +139,7 @@ steps:
         - e2e-coverage.out
       token:
         from_secret: codecov_token
-    when:
-      - path: *when_path
+    when: *when
     failure: ignore
 
 services:
