@@ -6,7 +6,7 @@ when:
 
 steps:
   - name: validate lha release tag
-    image: alpine:3.23
+    image: alpine/git
     commands:
       - |
         set -eu
@@ -16,10 +16,18 @@ steps:
           *) echo "Invalid LHA release tag: $LHA_VERSION (expected v3.17-lha-<semver>)" >&2; exit 1 ;;
         esac
         test -n "$CI_COMMIT_SHA"
+        BRANCH_SHA="$(git ls-remote origin refs/heads/v3.17-lha | awk '{print $1}')"
+        test -n "$BRANCH_SHA"
+        if [ "$CI_COMMIT_SHA" != "$BRANCH_SHA" ]; then
+          echo "Release tag $LHA_VERSION points to $CI_COMMIT_SHA, but v3.17-lha currently points to $BRANCH_SHA." >&2
+          echo "Refusing to move v3.17-lha/latest image aliases backwards. Tag the current v3.17-lha tip instead." >&2
+          exit 1
+        fi
         printf '%s\n' "$LHA_VERSION" > .lha-version
         printf '%s\n' "$CI_COMMIT_SHA" > .lha-source-sha
         echo "LHA Play CI release: $LHA_VERSION"
         echo "Source commit: $CI_COMMIT_SHA"
+        echo "v3.17-lha tip: $BRANCH_SHA"
 
   - name: publish lha server
     image: docker:cli
