@@ -1,6 +1,3 @@
-labels:
-  role: general
-
 when:
   - event: tag
 
