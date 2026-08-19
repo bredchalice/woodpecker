@@ -15,7 +15,7 @@
           <div class="lha-ci-failure-summary__body">
             <p class="lha-ci-kicker">Build failed</p>
             <strong>{{ $t('repo.pipeline.we_got_some_errors') }}</strong>
-            <span>The failed step remains selected below so the useful log stays visible.</span>
+            <span>The first failed step is selected automatically so the useful log is visible immediately.</span>
           </div>
           <Button color="red" :text="$t('repo.pipeline.show_errors')" :to="{ name: 'repo-pipeline-errors' }" />
         </div>
@@ -93,7 +93,14 @@ const repoPermissions = requiredInject('repo-permissions');
 const stepId = toRef(props, 'stepId');
 const hasErrors = computed(() => pipeline.value?.errors?.some((error) => !error.is_warning) ?? false);
 
-const defaultStepId = computed(() => pipeline.value?.workflows?.[0].children?.[0].pid ?? null);
+const defaultStepId = computed(() => {
+  const workflows = pipeline.value?.workflows ?? [];
+  for (const workflow of workflows) {
+    const failedStep = workflow.children?.find((step) => step.state === 'failure' || step.state === 'error');
+    if (failedStep) return failedStep.pid;
+  }
+  return workflows[0]?.children?.[0]?.pid ?? null;
+});
 
 const selectedStepId = computed({
   get() {
