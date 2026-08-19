@@ -7,7 +7,7 @@
         <WoodpeckerLogo class="h-8 w-8 shrink-0" />
         <span class="hidden min-w-0 flex-col sm:flex">
           <strong class="lha-ci-brand__name">LHA Play CI</strong>
-          <span class="lha-ci-brand__version" :title="version?.current">{{ version?.currentShort }}</span>
+          <span class="lha-ci-brand__version" :title="version?.current">{{ version?.current }}</span>
         </span>
       </router-link>
       <router-link v-if="user" :to="{ name: 'repos' }" class="navbar-clickable navbar-link">
