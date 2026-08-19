@@ -1,0 +1,95 @@
+labels:
+  role: general
+
+when:
+  - event: tag
+
+steps:
+  - name: validate lha release tag
+    image: alpine:3.23
+    commands:
+      - |
+        set -eu
+        LHA_VERSION="$CI_COMMIT_TAG"
+        case "$LHA_VERSION" in
+          v3.17-lha-[0-9]*.[0-9]*.[0-9]*) ;;
+          *) echo "Invalid LHA release tag: $LHA_VERSION (expected v3.17-lha-<semver>)" >&2; exit 1 ;;
+        esac
+        test -n "$CI_COMMIT_SHA"
+        printf '%s\n' "$LHA_VERSION" > .lha-version
+        printf '%s\n' "$CI_COMMIT_SHA" > .lha-source-sha
+        echo "LHA Play CI release: $LHA_VERSION"
+        echo "Source commit: $CI_COMMIT_SHA"
+
+  - name: publish lha server
+    image: docker:cli
+    depends_on:
+      - validate lha release tag
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      REGISTRY_PASSWORD:
+        from_secret: registry_password
+      DOCKER_BUILDKIT: "1"
+    commands:
+      - |
+        set -eu
+        LHA_VERSION="$(cat .lha-version)"
+        SOURCE_SHA="$(cat .lha-source-sha)"
+        printf '%s' "$REGISTRY_PASSWORD" | docker login registry.lhaplay.com --username lha-registry --password-stdin
+        timeout 45m docker build --progress=plain \
+          --build-arg "LHA_WOODPECKER_VERSION=$LHA_VERSION" \
+          -f docker/Dockerfile.server.fork \
+          -t "registry.lhaplay.com/woodpecker/server:$SOURCE_SHA" \
+          -t "registry.lhaplay.com/woodpecker/server:$LHA_VERSION" \
+          -t registry.lhaplay.com/woodpecker/server:v3.17-lha \
+          -t registry.lhaplay.com/woodpecker/server:latest \
+          .
+        docker push "registry.lhaplay.com/woodpecker/server:$SOURCE_SHA"
+        docker push "registry.lhaplay.com/woodpecker/server:$LHA_VERSION"
+        docker push registry.lhaplay.com/woodpecker/server:v3.17-lha
+        docker push registry.lhaplay.com/woodpecker/server:latest
+
+  - name: publish lha agent
+    image: docker:cli
+    depends_on:
+      - validate lha release tag
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      REGISTRY_PASSWORD:
+        from_secret: registry_password
+      DOCKER_BUILDKIT: "1"
+    commands:
+      - |
+        set -eu
+        LHA_VERSION="$(cat .lha-version)"
+        SOURCE_SHA="$(cat .lha-source-sha)"
+        printf '%s' "$REGISTRY_PASSWORD" | docker login registry.lhaplay.com --username lha-registry --password-stdin
+        timeout 45m docker build --progress=plain \
+          -f docker/Dockerfile.agent.alpine.multiarch \
+          -t "registry.lhaplay.com/woodpecker/agent:$SOURCE_SHA" \
+          -t "registry.lhaplay.com/woodpecker/agent:$LHA_VERSION" \
+          -t registry.lhaplay.com/woodpecker/agent:v3.17-lha \
+          -t registry.lhaplay.com/woodpecker/agent:latest \
+          .
+        docker push "registry.lhaplay.com/woodpecker/agent:$SOURCE_SHA"
+        docker push "registry.lhaplay.com/woodpecker/agent:$LHA_VERSION"
+        docker push registry.lhaplay.com/woodpecker/agent:v3.17-lha
+        docker push registry.lhaplay.com/woodpecker/agent:latest
+
+  - name: release summary
+    image: alpine:3.23
+    depends_on:
+      - publish lha server
+      - publish lha agent
+    commands:
+      - |
+        set -eu
+        LHA_VERSION="$(cat .lha-version)"
+        SOURCE_SHA="$(cat .lha-source-sha)"
+        echo "LHA Play CI $LHA_VERSION published from Git tag."
+        echo "Source: $SOURCE_SHA"
+        echo "Server tags: $LHA_VERSION, $SOURCE_SHA, v3.17-lha, latest"
+        echo "Agent tags:  $LHA_VERSION, $SOURCE_SHA, v3.17-lha, latest"
+        echo "Deployment remains an explicit host-side operation."
