@@ -1,5 +1,6 @@
 when:
   - event: tag
+    evaluate: 'not (CI_COMMIT_TAG contains "-lha-")'
   - event: pull_request
     branch: ${CI_REPO_DEFAULT_BRANCH}
     path:

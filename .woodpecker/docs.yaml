@@ -5,25 +5,20 @@ variables:
   - path: &when_path
       - 'docs/**'
       - '.woodpecker/docs.yaml'
-      # since we generate docs for cli tool we have to watch this too
       - 'cli/**'
       - 'cmd/cli/**'
-      # api docs
       - 'server/api/**'
-  - path: &docker_path # web source code
+  - path: &docker_path
       - 'web/**'
-      # api source code
       - 'server/api/**'
-      # go source code
       - '**/*.go'
       - 'go.*'
-      # schema changes
       - 'pipeline/schema/**'
-      # Dockerfile changes
       - 'docker/**'
 
 when:
   - event: tag
+    evaluate: 'not (CI_COMMIT_TAG contains "-lha-")'
   - event: pull_request
   - event: push
     path:
@@ -111,7 +106,6 @@ steps:
         branch: ${CI_REPO_DEFAULT_BRANCH}
       - event: [manual, tag]
 
-  # update latest and next version
   - name: version-next
     image: *alpine_image
     commands:
@@ -137,7 +131,6 @@ steps:
     image: *alpine_image
     commands:
       - apk add rsync
-      # copy all docs files and delete all old ones, but leave CNAME, index.yaml and version.json untouched
       - rsync -r --exclude .git --exclude CNAME --exclude index.yaml --exclude README.md --exclude version.json --delete docs/build/ ./docs_repo
     when:
       - event: push
@@ -160,7 +153,6 @@ steps:
       - git config --global user.name "woodpecker-bot"
       - cd ./docs_repo
       - git add .
-      # exit successfully if nothing changed
       - test -n "$(git status --porcelain)" || exit 0
       - git commit -m "Deploy website - based on ${CI_COMMIT_SHA}"
       - git push
