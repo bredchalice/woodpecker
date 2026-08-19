@@ -1,6 +1,3 @@
-labels:
-  role: general
-
 when:
   - event: tag
 
@@ -75,6 +72,8 @@ steps:
         SOURCE_SHA="$(cat .lha-source-sha)"
         printf '%s' "$REGISTRY_PASSWORD" | docker login registry.lhaplay.com --username lha-registry --password-stdin
         timeout 45m docker build --progress=plain \
+          --build-arg "CI_COMMIT_TAG=$LHA_VERSION" \
+          --build-arg "CI_COMMIT_SHA=$SOURCE_SHA" \
           -f docker/Dockerfile.agent.alpine.multiarch \
           -t "registry.lhaplay.com/woodpecker/agent:$SOURCE_SHA" \
           -t "registry.lhaplay.com/woodpecker/agent:$LHA_VERSION" \
