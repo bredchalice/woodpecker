@@ -3,9 +3,12 @@
     class="text-neutral-content border-wp-background-400 dark:border-wp-background-100 bg-wp-primary-200 text-wp-primary-text-100 dark:bg-wp-primary-300 flex border-b p-4 font-bold"
   >
     <div class="flex items-center space-x-2">
-      <router-link :to="{ name: 'home' }" class="-my-2 flex flex-col px-2">
-        <WoodpeckerLogo class="h-8 w-8" />
-        <span class="text-xs" :title="version?.current">{{ version?.currentShort }}</span>
+      <router-link :to="{ name: 'home' }" class="lha-ci-brand -my-2 flex items-center gap-3 px-2">
+        <WoodpeckerLogo class="h-8 w-8 shrink-0" />
+        <span class="hidden min-w-0 flex-col sm:flex">
+          <strong class="lha-ci-brand__name">LHA Play CI</strong>
+          <span class="lha-ci-brand__version" :title="version?.current">{{ version?.currentShort }}</span>
+        </span>
       </router-link>
       <router-link v-if="user" :to="{ name: 'repos' }" class="navbar-clickable navbar-link">
         <span class="flex md:hidden">{{ $t('repos') }}</span>
@@ -75,6 +78,23 @@ function saveRedirect() {
 
 <style scoped>
 @reference '~/tailwind.css';
+
+.lha-ci-brand {
+  text-decoration: none;
+}
+
+.lha-ci-brand__name {
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.lha-ci-brand__version {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.72;
+}
 
 .navbar-icon {
   @apply h-11 w-11 rounded-md p-2.5 hover:bg-black/20 dark:hover:bg-white/5;
