@@ -1,50 +1,56 @@
 <template>
-  <Panel>
-    <div class="flex flex-col gap-y-4">
-      <template v-for="(error, _index) in pipeline!.errors" :key="_index">
-        <div>
-          <div class="grid grid-cols-[minmax(10rem,auto)_3fr]">
-            <span class="flex items-center gap-x-2">
-              <Icon
-                name="alert"
-                class="my-1 shrink-0"
-                :class="{
-                  'text-wp-state-warn-100': error.is_warning,
-                  'text-wp-error-100': !error.is_warning,
-                }"
-              />
-              <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-              <span>
+  <div>
+    <header class="lha-ci-workspace-head">
+      <div class="lha-ci-workspace-head__copy">
+        <p class="lha-ci-kicker">Pipeline diagnostics</p>
+        <h2 class="lha-ci-workspace-head__title">{{ hasErrors ? 'Errors and warnings' : 'Warnings' }}</h2>
+        <p class="lha-ci-workspace-head__text">Configuration and execution diagnostics reported for build #{{ pipeline.number }}.</p>
+      </div>
+      <div class="lha-ci-workspace-head__context">
+        <span>Diagnostics</span>
+        <strong>{{ pipeline.errors?.length ?? 0 }}</strong>
+      </div>
+    </header>
+
+    <Panel class="lha-ci-workspace-card">
+      <div class="lha-ci-workspace-list">
+        <template v-for="(error, index) in pipeline.errors" :key="index">
+          <article class="rounded-lg border p-4">
+            <div class="grid gap-2 md:grid-cols-[minmax(10rem,auto)_3fr]">
+              <span class="flex items-center gap-x-2">
+                <Icon
+                  name="alert"
+                  class="my-1 shrink-0"
+                  :class="{
+                    'text-wp-state-warn-100': error.is_warning,
+                    'text-wp-error-100': !error.is_warning,
+                  }"
+                />
                 <code>{{ error.type }}</code>
               </span>
-            </span>
-            <span
-              v-if="isLinterError(error) || isDeprecationError(error) || isBadHabitError(error)"
-              class="flex items-center gap-x-2 whitespace-nowrap"
-            >
-              <span>
-                <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-                <span v-if="error.data?.file" class="font-bold">{{ error.data?.file }}: </span>
-                <span>{{ error.data?.field }}</span>
+              <span
+                v-if="isLinterError(error) || isDeprecationError(error) || isBadHabitError(error)"
+                class="flex min-w-0 items-center gap-x-2"
+              >
+                <span class="min-w-0 truncate">
+                  <span v-if="error.data?.file" class="font-bold">{{ error.data.file }}: </span>
+                  <span>{{ error.data?.field }}</span>
+                </span>
+                <DocsLink
+                  v-if="isDeprecationError(error) || isBadHabitError(error)"
+                  :topic="error.data?.field || ''"
+                  :url="error.data?.docs || ''"
+                />
               </span>
-              <DocsLink
-                v-if="isDeprecationError(error) || isBadHabitError(error)"
-                :topic="error.data?.field || ''"
-                :url="error.data?.docs || ''"
-              />
-            </span>
-            <span v-else />
-          </div>
-          <div class="col-start-2 grid grid-cols-[minmax(10rem,auto)_4fr]">
-            <span />
-            <span>
+            </div>
+            <div class="mt-3 md:pl-10">
               <RenderMarkdown :content="error.message" />
-            </span>
-          </div>
-        </div>
-      </template>
-    </div>
-  </Panel>
+            </div>
+          </article>
+        </template>
+      </div>
+    </Panel>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -61,6 +67,7 @@ import type { PipelineError } from '~/lib/api/types';
 
 const repo = requiredInject('repo');
 const pipeline = requiredInject('pipeline');
+const hasErrors = computed(() => pipeline.value.errors?.some((error) => !error.is_warning) ?? false);
 
 function isLinterError(error: PipelineError): error is PipelineError<{ file?: string; field: string }> {
   return error.type === 'linter';
@@ -79,7 +86,7 @@ function isBadHabitError(error: PipelineError): error is PipelineError<{ file?: 
 const { t } = useI18n();
 useWPTitle(
   computed(() => [
-    pipeline.value.errors?.some((e) => !e.is_warning) ? t('repo.pipeline.errors') : t('repo.pipeline.warnings'),
+    hasErrors.value ? t('repo.pipeline.errors') : t('repo.pipeline.warnings'),
     t('repo.pipeline.pipeline', { pipelineId: pipeline.value.number }),
     repo.value.full_name,
   ]),
