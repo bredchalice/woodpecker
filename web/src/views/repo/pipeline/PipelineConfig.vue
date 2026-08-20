@@ -1,18 +1,33 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <Panel
-      v-for="pipelineConfig in pipelineConfigsDecoded"
-      :key="pipelineConfig.hash"
-      :collapsable="pipelineConfigsDecoded && pipelineConfigsDecoded.length > 1"
-      collapsed-by-default
-      :title="pipelineConfigsDecoded && pipelineConfigsDecoded.length > 1 ? pipelineConfig.name : ''"
-    >
-      <SyntaxHighlight
-        class="code-box overflow-auto font-mono whitespace-pre"
-        language="yaml"
-        :code="pipelineConfig.data"
-      />
-    </Panel>
+  <div>
+    <header class="lha-ci-workspace-head">
+      <div class="lha-ci-workspace-head__copy">
+        <p class="lha-ci-kicker">Resolved workflow</p>
+        <h2 class="lha-ci-workspace-head__title">Pipeline configuration</h2>
+        <p class="lha-ci-workspace-head__text">The exact workflow configuration Woodpecker resolved for build #{{ pipeline.number }}.</p>
+      </div>
+      <div class="lha-ci-workspace-head__context">
+        <span>Configs</span>
+        <strong>{{ pipelineConfigsDecoded.length }}</strong>
+      </div>
+    </header>
+
+    <div class="lha-ci-workspace-list">
+      <Panel
+        v-for="pipelineConfig in pipelineConfigsDecoded"
+        :key="pipelineConfig.hash"
+        class="lha-ci-workspace-card"
+        :collapsable="pipelineConfigsDecoded.length > 1"
+        collapsed-by-default
+        :title="pipelineConfigsDecoded.length > 1 ? pipelineConfig.name : ''"
+      >
+        <SyntaxHighlight
+          class="code-box overflow-auto font-mono whitespace-pre"
+          language="yaml"
+          :code="pipelineConfig.data"
+        />
+      </Panel>
+    </div>
   </div>
 </template>
 
