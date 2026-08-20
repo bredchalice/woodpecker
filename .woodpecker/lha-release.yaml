@@ -76,13 +76,12 @@ steps:
     commands:
       - |
         set -eu
-        if [ -z "${GITOPS_TOKEN:-}" ]; then
+        if [ -z "$GITOPS_TOKEN" ]; then
           echo "Missing Woodpecker secret: gitops_token" >&2
-          echo "Create it for this repository or organization and allow it for tag events." >&2
           exit 1
         fi
         rm -rf /tmp/lha-infrastructure-versions
-        GITOPS_URL="https://x-access-token:${GITOPS_TOKEN}@github.com/bredchalice/lha-infrastructure-versions.git"
+        GITOPS_URL="https://x-access-token:$GITOPS_TOKEN@github.com/bredchalice/lha-infrastructure-versions.git"
         git clone --depth=1 --branch master "$GITOPS_URL" /tmp/lha-infrastructure-versions
         cd /tmp/lha-infrastructure-versions
         git remote set-url origin https://github.com/bredchalice/lha-infrastructure-versions.git
