@@ -390,7 +390,52 @@
   text-align: center;
 }
 
-/* Normalize upstream cards and settings surfaces into the same product language. */
+.lha-ci-shell-header {
+  border-bottom-color: var(--lha-ci-border) !important;
+  background:
+    linear-gradient(180deg, var(--lha-ci-accent-soft), transparent 110%),
+    var(--wp-background-100) !important;
+}
+
+.lha-ci-shell-content {
+  padding-top: 1.5rem !important;
+  padding-bottom: 2.5rem !important;
+}
+
+.lha-ci-shell-content > :first-child {
+  position: relative;
+}
+
+.lha-ci-shell-content :where(.border) {
+  border-color: var(--lha-ci-border);
+}
+
+.lha-ci-shell-content :where(.rounded-md.border, .rounded-lg.border) {
+  border-radius: 0.8rem;
+  background-color: var(--lha-ci-surface);
+}
+
+.lha-ci-shell-content :where(input, textarea, select) {
+  border-color: var(--lha-ci-border);
+}
+
+.lha-ci-shell-content :where(input, textarea, select):focus-visible {
+  outline: 2px solid var(--lha-ci-accent);
+  outline-offset: 1px;
+}
+
+.lha-ci-shell-fluid {
+  min-height: 0;
+  background: var(--wp-background-200);
+}
+
+.lha-ci-shell-header :where(a, button):focus-visible,
+.lha-ci-shell-content :where(a, button):focus-visible {
+  outline: 2px solid var(--lha-ci-accent);
+  outline-offset: 2px;
+}
+
+/* Normalize remaining upstream cards and settings surfaces into one product language. */
 main :where(.rounded-md.border, .rounded-lg.border) {
   border-color: var(--lha-ci-border);
 }
