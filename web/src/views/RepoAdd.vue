@@ -75,7 +75,7 @@
               :to="repo.id ? { name: 'repo', params: { repoId: repo.id } } : undefined"
             >
               <span class="lha-ci-enable__repo-name">{{ repo.full_name }}</span>
-              <div class="ml-auto flex items-center">
+              <div class="ml-auto flex items-center" @click.prevent.stop>
                 <Badge v-if="repo.id" class="md:display-unset mr-2 hidden" :value="$t('repo.enable.disabled')" />
                 <Button
                   :text="$t('repo.enable.enable')"
@@ -128,16 +128,22 @@ const { searchedRepos } = useRepoSearch(repos, search);
 
 onMounted(async () => {
   loading.value = true;
-  repos.value = await apiClient.getRepoList({ all: true });
-  loading.value = false;
+  try {
+    repos.value = await apiClient.getRepoList({ all: true });
+  } finally {
+    loading.value = false;
+  }
 });
 
 const { doSubmit: activateRepo, isLoading: isActivatingRepo } = useAsyncAction(async (repo: Repo) => {
   repoToActivate.value = repo;
-  const _repo = await apiClient.activateRepo(repo.forge_remote_id);
-  notifications.notify({ title: i18n.t('repo.enable.success'), type: 'success' });
-  repoToActivate.value = undefined;
-  await router.push({ name: 'repo', params: { repoId: _repo.id } });
+  try {
+    const activatedRepo = await apiClient.activateRepo(repo.forge_remote_id);
+    notifications.notify({ title: i18n.t('repo.enable.success'), type: 'success' });
+    await router.push({ name: 'repo', params: { repoId: activatedRepo.id } });
+  } finally {
+    repoToActivate.value = undefined;
+  }
 });
 
 const goBack = useRouteBack({ name: 'repos' });
