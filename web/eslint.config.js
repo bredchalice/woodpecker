@@ -67,6 +67,8 @@ export default antfu(
       'src/views/Repos.vue',
       'src/views/user/UserWrapper.vue',
       'src/views/admin/AdminSettingsWrapper.vue',
+      'src/views/admin/AdminAgents.vue',
+      'src/views/admin/AdminQueue.vue',
       'src/views/org/settings/OrgSettingsWrapper.vue',
       'src/views/repo/settings/RepoSettings.vue',
       'src/views/repo/RepoBranches.vue',
