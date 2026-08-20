@@ -109,8 +109,17 @@ steps:
             raise SystemExit(f"GitHub API read failed: HTTP {error.code}: {body}") from error
 
         content = base64.b64decode(current["content"]).decode("utf-8")
-        pattern = r"newTag: v3\.17-lha(?:-[0-9][0-9.]*)?"
-        updated, replacements = re.subn(pattern, f"newTag: {release_tag}", content)
+        image_names = (
+            "registry.lhaplay.com/woodpecker/server",
+            "registry.lhaplay.com/woodpecker/agent",
+        )
+        updated = content
+        replacements = 0
+        for image_name in image_names:
+            pattern = rf"(^\s*- name: {re.escape(image_name)}\s*$\n\s*newTag:)\s*[^\s#]+"
+            updated, count = re.subn(pattern, rf"\1 {release_tag}", updated, count=1, flags=re.MULTILINE)
+            replacements += count
+
         if replacements != 2:
             raise SystemExit(f"Expected to update exactly 2 Woodpecker image tags, updated {replacements}")
 
