@@ -65,107 +65,47 @@ steps:
       password:
         from_secret: registry_password
 
-  - name: update gitops deployment
-    image: python:3.13-alpine
-    depends_on:
-      - publish lha server
-      - publish lha agent
-    environment:
-      GITOPS_TOKEN:
-        from_secret: gitops_token
-    commands:
-      - |
-        set -eu
-        python - <<'PY'
-        import base64
-        import json
-        import os
-        import re
-        import urllib.error
-        import urllib.request
-
-        token = os.environ.get("GITOPS_TOKEN", "")
-        release_tag = os.environ.get("CI_COMMIT_TAG", "")
-        if not token:
-            raise SystemExit("Missing Woodpecker secret: gitops_token")
-        if not release_tag:
-            raise SystemExit("Missing CI_COMMIT_TAG")
-
-        read_url = "https://api.github.com/repos/bredchalice/lha-infrastructure-versions/contents/apps/woodpecker/kustomization.yaml?ref=master"
-        write_url = "https://api.github.com/repos/bredchalice/lha-infrastructure-versions/contents/apps/woodpecker/kustomization.yaml"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {token}",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "LHA-Play-CI",
-        }
-
-        print("Reading current GitOps desired version...")
-        try:
-            with urllib.request.urlopen(urllib.request.Request(read_url, headers=headers), timeout=30) as response:
-                current = json.load(response)
-        except urllib.error.HTTPError as error:
-            body = error.read().decode("utf-8", "replace")
-            raise SystemExit(f"GitHub API read failed: HTTP {error.code}: {body}") from error
-
-        content = base64.b64decode(current["content"]).decode("utf-8")
-        image_names = (
-            "registry.lhaplay.com/woodpecker/server",
-            "registry.lhaplay.com/woodpecker/agent",
-        )
-        updated = content
-        replacements = 0
-        for image_name in image_names:
-            pattern = rf"(^\s*- name: {re.escape(image_name)}\s*$\n\s*newTag:)\s*[^\s#]+"
-            updated, count = re.subn(pattern, rf"\1 {release_tag}", updated, count=1, flags=re.MULTILINE)
-            replacements += count
-
-        if replacements != 2:
-            raise SystemExit(f"Expected to update exactly 2 Woodpecker image tags, updated {replacements}")
-
-        if updated == content:
-            print(f"GitOps already points at {release_tag}")
-            raise SystemExit(0)
-
-        payload = json.dumps({
-            "message": f"deploy(woodpecker): {release_tag}",
-            "content": base64.b64encode(updated.encode("utf-8")).decode("ascii"),
-            "sha": current["sha"],
-            "branch": "master",
-            "committer": {
-                "name": "LHA Play CI",
-                "email": "ci@lhaplay.com",
-            },
-        }).encode("utf-8")
-
-        print(f"Updating GitOps desired version to {release_tag}...")
-        request = urllib.request.Request(
-            write_url,
-            data=payload,
-            headers={**headers, "Content-Type": "application/json"},
-            method="PUT",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                result = json.load(response)
-        except urllib.error.HTTPError as error:
-            body = error.read().decode("utf-8", "replace")
-            raise SystemExit(f"GitHub API update failed: HTTP {error.code}: {body}") from error
-
-        commit_sha = result.get("commit", {}).get("sha", "unknown")
-        print(f"GitOps desired version updated to {release_tag} in commit {commit_sha}; Argo CD will reconcile it.")
-        PY
-
   - name: release summary
     image: alpine:3.23
     depends_on:
-      - update gitops deployment
+      - publish lha server
+      - publish lha agent
     commands:
       - |
         set -eu
-        echo "LHA Play CI $CI_COMMIT_TAG published and promoted from Git tag."
+        echo "LHA Play CI $CI_COMMIT_TAG published from Git tag."
         echo "Source: $CI_COMMIT_SHA"
         echo "Server tags: $CI_COMMIT_TAG, $CI_COMMIT_SHA, v3.17-lha, latest"
         echo "Agent tags:  $CI_COMMIT_TAG, $CI_COMMIT_SHA, v3.17-lha, latest"
-        echo "GitOps: apps/woodpecker/kustomization.yaml -> $CI_COMMIT_TAG"
-        echo "Argo CD owns the Kubernetes rollout."
+        echo "Cyclops owns the Kubernetes rollout."
+
+  - name: deploy woodpecker through cyclops
+    image: alpine:3.23
+    depends_on:
+      - release summary
+    commands:
+      - |
+        set -eu
+        apk add --no-cache curl jq
+        CTRL="${CYCLOPS_CTRL_URL:-http://cyclops-ctrl.cyclops:8080}"
+        MODULE=woodpecker
+        TAG="$CI_COMMIT_TAG"
+
+        current="$(curl -fsS "${CTRL}/modules/${MODULE}")"
+        server_tag="$(printf '%s' "$current" | jq -r '.values.woodpeckerServerTag // empty')"
+        agent_tag="$(printf '%s' "$current" | jq -r '.values.woodpeckerAgentTag // empty')"
+
+        if [ "$server_tag" = "$TAG" ] && [ "$agent_tag" = "$TAG" ]; then
+          echo "Cyclops module ${MODULE} already uses ${TAG}"
+          exit 0
+        fi
+
+        payload="$(printf '%s' "$current" | jq --arg tag "$TAG" '.values.woodpeckerServerTag = $tag | .values.woodpeckerAgentTag = $tag')"
+        printf '%s' "$payload" | curl -fsS \
+          -X POST \
+          -H 'Content-Type: application/json' \
+          --data-binary @- \
+          "${CTRL}/modules/update"
+
+        curl -fsS -X POST "${CTRL}/modules/${MODULE}/reconcile" >/dev/null
+        echo "Cyclops deployed Woodpecker server/agent -> ${TAG}"
