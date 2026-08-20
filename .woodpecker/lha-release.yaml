@@ -80,11 +80,25 @@ steps:
           echo "Missing Woodpecker secret: gitops_token" >&2
           exit 1
         fi
-        rm -rf /tmp/lha-infrastructure-versions
+
         GITOPS_REPO="https://github.com/bredchalice/lha-infrastructure-versions.git"
-        GITOPS_AUTH="$(printf 'bredchalice:%s' "$GITOPS_TOKEN" | base64 | tr -d '\n')"
-        git -c "http.extraHeader=Authorization: Basic $GITOPS_AUTH" clone --depth=1 --branch master "$GITOPS_REPO" /tmp/lha-infrastructure-versions
+        GIT_ASKPASS_SCRIPT=/tmp/lha-git-askpass.sh
+        cat > "$GIT_ASKPASS_SCRIPT" <<'EOF'
+        #!/bin/sh
+        case "$1" in
+          *Username*) printf '%s\n' 'bredchalice' ;;
+          *Password*) printf '%s\n' "$GITOPS_TOKEN" ;;
+          *) exit 1 ;;
+        esac
+        EOF
+        chmod 700 "$GIT_ASKPASS_SCRIPT"
+        export GIT_ASKPASS="$GIT_ASKPASS_SCRIPT"
+        export GIT_TERMINAL_PROMPT=0
+
+        rm -rf /tmp/lha-infrastructure-versions
+        git clone --depth=1 --branch master "$GITOPS_REPO" /tmp/lha-infrastructure-versions
         cd /tmp/lha-infrastructure-versions
+
         KUSTOMIZATION=apps/woodpecker/kustomization.yaml
         test -f "$KUSTOMIZATION"
         sed -i "s#newTag: v3\.17-lha\(-[0-9][0-9.]*\)\{0,1\}#newTag: $CI_COMMIT_TAG#g" "$KUSTOMIZATION"
@@ -94,11 +108,13 @@ steps:
           echo "GitOps already points at $CI_COMMIT_TAG"
           exit 0
         fi
+
         git config user.name "LHA Play CI"
         git config user.email "ci@lhaplay.com"
         git add "$KUSTOMIZATION"
         git commit -m "deploy(woodpecker): $CI_COMMIT_TAG"
-        git -c "http.extraHeader=Authorization: Basic $GITOPS_AUTH" push origin HEAD:master
+        git push origin HEAD:master
+        rm -f "$GIT_ASKPASS_SCRIPT"
         echo "GitOps desired version updated to $CI_COMMIT_TAG; Argo CD will reconcile it."
 
   - name: release summary
