@@ -12,9 +12,7 @@
     <template v-if="$slots.tabActions" #tabActions><slot name="tabActions" /></template>
   </Header>
 
-  <div v-if="fluidContent" class="lha-ci-shell-fluid">
-    <slot />
-  </div>
+  <slot v-if="fluidContent" />
   <Container v-else class="lha-ci-shell-content">
     <slot />
   </Container>
