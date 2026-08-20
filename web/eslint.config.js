@@ -10,9 +10,7 @@ import eslintPluginVueScopedCSS from 'eslint-plugin-vue-scoped-css';
 export default antfu(
   {
     stylistic: false,
-    typescript: {
-      tsconfigPath: './tsconfig.json',
-    },
+    typescript: { tsconfigPath: './tsconfig.json' },
     vue: true,
     jsonc: false,
     yaml: false,
@@ -46,12 +44,7 @@ export default antfu(
       '@intlify/vue-i18n/prefer-linked-key-with-paren': 'error',
       '@intlify/vue-i18n/sfc-locale-attr': 'error',
     },
-    settings: {
-      'vue-i18n': {
-        localeDir: './src/assets/locales/en.json',
-        messageSyntaxVersion: '^9.0.0',
-      },
-    },
+    settings: { 'vue-i18n': { localeDir: './src/assets/locales/en.json', messageSyntaxVersion: '^9.0.0' } },
   },
   {
     files: ['**/*.vue'],
@@ -76,25 +69,19 @@ export default antfu(
       'src/views/admin/AdminSettingsWrapper.vue',
       'src/views/org/settings/OrgSettingsWrapper.vue',
       'src/views/repo/settings/RepoSettings.vue',
+      'src/views/repo/RepoBranches.vue',
+      'src/views/repo/RepoPullRequests.vue',
       'src/views/repo/RepoManualPipeline.vue',
       'src/views/repo/RepoPipelines.vue',
       'src/views/repo/pipeline/Pipeline.vue',
       'src/views/repo/pipeline/PipelineWrapper.vue',
     ],
-    rules: {
-      '@intlify/vue-i18n/no-raw-text': 'off',
-    },
+    rules: { '@intlify/vue-i18n/no-raw-text': 'off' },
   },
   {
     ignores: [
-      'dist',
-      'coverage/',
-      'package.json',
-      'tsconfig.eslint.json',
-      'tsconfig.json',
-      'src/assets/locales/**/*',
-      '!src/assets/locales/en.json',
-      'components.d.ts',
+      'dist', 'coverage/', 'package.json', 'tsconfig.eslint.json', 'tsconfig.json',
+      'src/assets/locales/**/*', '!src/assets/locales/en.json', 'components.d.ts',
     ],
   },
 );
