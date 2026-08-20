@@ -73,7 +73,11 @@
 
             <div class="ml-auto flex items-center gap-2">
               <Badge v-if="task.agent_name" :label="$t('admin.settings.queue.agent')" :value="task.agent_name" />
-              <Badge v-if="task.dependencies" :label="$t('admin.settings.queue.waiting_for')" :value="task.dependencies.join(', ')" />
+              <Badge
+                v-if="task.dependencies.length > 0"
+                :label="$t('admin.settings.queue.waiting_for')"
+                :value="task.dependencies.join(', ')"
+              />
               <IconButton
                 v-if="task.pipeline_number"
                 icon="chevron-right"
