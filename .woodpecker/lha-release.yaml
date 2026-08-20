@@ -66,7 +66,7 @@ steps:
         from_secret: registry_password
 
   - name: update gitops deployment
-    image: alpine/git
+    image: python:3.13-alpine
     depends_on:
       - publish lha server
       - publish lha agent
@@ -76,49 +76,76 @@ steps:
     commands:
       - |
         set -eu
-        if [ -z "$GITOPS_TOKEN" ]; then
-          echo "Missing Woodpecker secret: gitops_token" >&2
-          exit 1
-        fi
+        python - <<'PY'
+        import base64
+        import json
+        import os
+        import re
+        import urllib.error
+        import urllib.request
 
-        GITOPS_REPO="https://github.com/bredchalice/lha-infrastructure-versions.git"
-        GIT_CREDENTIALS=/tmp/lha-git-credentials
-        umask 077
-        printf 'protocol=https\nhost=github.com\nusername=bredchalice\npassword=%s\n\n' "$GITOPS_TOKEN" | git credential-store --file "$GIT_CREDENTIALS" store
-        export GIT_CONFIG_COUNT=1
-        export GIT_CONFIG_KEY_0=credential.helper
-        export GIT_CONFIG_VALUE_0="store --file $GIT_CREDENTIALS"
-        export GIT_TERMINAL_PROMPT=0
+        token = os.environ.get("GITOPS_TOKEN", "")
+        release_tag = os.environ.get("CI_COMMIT_TAG", "")
+        if not token:
+            raise SystemExit("Missing Woodpecker secret: gitops_token")
+        if not release_tag:
+            raise SystemExit("Missing CI_COMMIT_TAG")
 
-        cleanup() {
-          rm -f "$GIT_CREDENTIALS"
+        read_url = "https://api.github.com/repos/bredchalice/lha-infrastructure-versions/contents/apps/woodpecker/kustomization.yaml?ref=master"
+        write_url = "https://api.github.com/repos/bredchalice/lha-infrastructure-versions/contents/apps/woodpecker/kustomization.yaml"
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "LHA-Play-CI",
         }
-        trap cleanup EXIT
 
-        echo "Checking authenticated GitHub access..."
-        git ls-remote "$GITOPS_REPO" refs/heads/master >/dev/null
-        echo "Authenticated GitHub access OK."
+        print("Reading current GitOps desired version...")
+        try:
+            with urllib.request.urlopen(urllib.request.Request(read_url, headers=headers), timeout=30) as response:
+                current = json.load(response)
+        except urllib.error.HTTPError as error:
+            body = error.read().decode("utf-8", "replace")
+            raise SystemExit(f"GitHub API read failed: HTTP {error.code}: {body}") from error
 
-        rm -rf /tmp/lha-infrastructure-versions
-        git clone --depth=1 --branch master "$GITOPS_REPO" /tmp/lha-infrastructure-versions
-        cd /tmp/lha-infrastructure-versions
+        content = base64.b64decode(current["content"]).decode("utf-8")
+        pattern = r"newTag: v3\.17-lha(?:-[0-9][0-9.]*)?"
+        updated, replacements = re.subn(pattern, f"newTag: {release_tag}", content)
+        if replacements != 2:
+            raise SystemExit(f"Expected to update exactly 2 Woodpecker image tags, updated {replacements}")
 
-        KUSTOMIZATION=apps/woodpecker/kustomization.yaml
-        test -f "$KUSTOMIZATION"
-        sed -i "s#newTag: v3\.17-lha\(-[0-9][0-9.]*\)\{0,1\}#newTag: $CI_COMMIT_TAG#g" "$KUSTOMIZATION"
-        test "$(grep -c "newTag: $CI_COMMIT_TAG" "$KUSTOMIZATION")" -eq 2
-        git diff --check
-        if git diff --quiet -- "$KUSTOMIZATION"; then
-          echo "GitOps already points at $CI_COMMIT_TAG"
-          exit 0
-        fi
+        if updated == content:
+            print(f"GitOps already points at {release_tag}")
+            raise SystemExit(0)
 
-        git config user.name "LHA Play CI"
-        git config user.email "ci@lhaplay.com"
-        git add "$KUSTOMIZATION"
-        git commit -m "deploy(woodpecker): $CI_COMMIT_TAG"
-        git push origin HEAD:master
-        echo "GitOps desired version updated to $CI_COMMIT_TAG; Argo CD will reconcile it."
+        payload = json.dumps({
+            "message": f"deploy(woodpecker): {release_tag}",
+            "content": base64.b64encode(updated.encode("utf-8")).decode("ascii"),
+            "sha": current["sha"],
+            "branch": "master",
+            "committer": {
+                "name": "LHA Play CI",
+                "email": "ci@lhaplay.com",
+            },
+        }).encode("utf-8")
+
+        print(f"Updating GitOps desired version to {release_tag}...")
+        request = urllib.request.Request(
+            write_url,
+            data=payload,
+            headers={**headers, "Content-Type": "application/json"},
+            method="PUT",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                result = json.load(response)
+        except urllib.error.HTTPError as error:
+            body = error.read().decode("utf-8", "replace")
+            raise SystemExit(f"GitHub API update failed: HTTP {error.code}: {body}") from error
+
+        commit_sha = result.get("commit", {}).get("sha", "unknown")
+        print(f"GitOps desired version updated to {release_tag} in commit {commit_sha}; Argo CD will reconcile it.")
+        PY
 
   - name: release summary
     image: alpine:3.23
