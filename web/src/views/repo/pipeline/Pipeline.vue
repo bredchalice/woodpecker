@@ -8,16 +8,21 @@
       />
 
       <div class="relative flex min-w-0 grow basis-full flex-col items-stretch gap-3 md:basis-auto">
-        <div v-if="hasErrors" class="lha-ci-failure-summary">
+        <div v-if="failureSummary" class="lha-ci-failure-summary">
           <div class="lha-ci-failure-summary__icon">
             <Icon name="status-error" class="text-wp-error-100" size="1.4rem" />
           </div>
           <div class="lha-ci-failure-summary__body">
-            <p class="lha-ci-kicker">Build failed</p>
-            <strong>{{ $t('repo.pipeline.we_got_some_errors') }}</strong>
-            <span>The first failed step is selected automatically so the useful log is visible immediately.</span>
+            <p class="lha-ci-kicker">{{ failureSummary.kicker }}</p>
+            <strong>{{ failureSummary.title }}</strong>
+            <span>{{ failureSummary.detail }}</span>
           </div>
-          <Button color="red" :text="$t('repo.pipeline.show_errors')" :to="{ name: 'repo-pipeline-errors' }" />
+          <Button
+            v-if="hasErrors"
+            color="red"
+            :text="$t('repo.pipeline.show_errors')"
+            :to="{ name: 'repo-pipeline-errors' }"
+          />
         </div>
 
         <div v-if="pipeline!.status === 'blocked'" class="mb-4 w-full md:mb-auto">
@@ -93,38 +98,53 @@ const repoPermissions = requiredInject('repo-permissions');
 const stepId = toRef(props, 'stepId');
 const hasErrors = computed(() => pipeline.value?.errors?.some((error) => !error.is_warning) ?? false);
 
-const defaultStepId = computed(() => {
-  const workflows = pipeline.value?.workflows ?? [];
-  for (const workflow of workflows) {
-    const failedStep = workflow.children?.find((step) => step.state === 'failure' || step.state === 'error');
-    if (failedStep) return failedStep.pid;
-  }
-  return workflows[0]?.children?.[0]?.pid ?? null;
+const orderedSteps = computed(() =>
+  (pipeline.value?.workflows ?? []).flatMap((workflow) => workflow.children ?? []),
+);
+
+const automaticStepId = computed(() => {
+  const steps = orderedSteps.value;
+  if (steps.length === 0) return null;
+
+  // A live pipeline should always show the first currently executing step. This
+  // also makes parallel workflows deterministic: the first running step in UI
+  // order wins.
+  const running = steps.find((step) => step.state === 'running' || step.state === 'started');
+  if (running) return running.pid;
+
+  // Once a build has failed, put the useful failed log in front of the user.
+  const failed = steps.find((step) => step.state === 'failure' || step.state === 'error');
+  if (failed) return failed.pid;
+
+  // Between steps (or for a completed successful build), keep the most recently
+  // completed step visible instead of jumping back to the first step.
+  const completedStates = new Set(['success', 'failure', 'error', 'killed', 'canceled', 'skipped']);
+  const completed = [...steps].reverse().find((step) => completedStates.has(step.state));
+  if (completed) return completed.pid;
+
+  // Nothing has started yet. Prefer the first pending step and finally fall back
+  // to the first step if the backend reports a state we do not know yet.
+  return steps.find((step) => step.state === 'pending')?.pid ?? steps[0]?.pid ?? null;
 });
+
+function findStep(id: number | null): PipelineStep | undefined {
+  if (id === null) return undefined;
+  return orderedSteps.value.find((step) => step.pid === id);
+}
 
 const selectedStepId = computed({
   get() {
+    // An explicit step in the route is a user/manual selection and must remain
+    // pinned. With no route step, selection stays automatic and follows pipeline
+    // execution as states change.
     if (stepId.value !== '' && stepId.value !== null && stepId.value !== undefined) {
       const id = Number.parseInt(stepId.value, 10);
-
-      let step = pipeline.value.workflows?.find((workflow) => workflow.pid === id)?.children[0];
-      if (step) {
-        return step.pid;
-      }
-
-      step = pipeline.value?.workflows?.reduce(
-        (prev, workflow) => prev || workflow.children?.find((child) => child.pid === id),
-        undefined as PipelineStep | undefined,
-      );
-      if (step) {
-        return step.pid;
-      }
-
-      return defaultStepId.value;
+      const explicitStep = findStep(id);
+      return explicitStep?.pid ?? automaticStepId.value;
     }
 
     if (window.innerWidth > 768) {
-      return defaultStepId.value;
+      return automaticStepId.value;
     }
 
     return null;
@@ -137,6 +157,32 @@ const selectedStepId = computed({
 
     router.replace({ params: { ...route.params, stepId: `${_selectedStepId}` } });
   },
+});
+
+const selectedStep = computed(() => findStep(selectedStepId.value));
+const firstPipelineError = computed(() => pipeline.value?.errors?.find((error) => !error.is_warning));
+
+const failureSummary = computed(() => {
+  const step = selectedStep.value;
+  if (step && (step.state === 'failure' || step.state === 'error')) {
+    const exitCode = step.exit_code !== undefined && step.exit_code !== null ? `Exit code ${step.exit_code}.` : '';
+    const detail = step.error || firstPipelineError.value?.message || exitCode || 'The step failed. Open its log for the command output.';
+    return {
+      kicker: 'Step failed',
+      title: step.name,
+      detail: exitCode && detail !== exitCode ? `${exitCode} ${detail}` : detail,
+    };
+  }
+
+  if (firstPipelineError.value) {
+    return {
+      kicker: 'Pipeline error',
+      title: firstPipelineError.value.type || i18n.t('repo.pipeline.we_got_some_errors'),
+      detail: firstPipelineError.value.message || i18n.t('repo.pipeline.we_got_some_errors'),
+    };
+  }
+
+  return null;
 });
 
 const { doSubmit: approvePipeline, isLoading: isApprovingPipeline } = useAsyncAction(async () => {
@@ -195,6 +241,7 @@ useWPTitle(
 .lha-ci-failure-summary__body span {
   color: var(--wp-text-alt-100);
   font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 @media (max-width: 760px) {
