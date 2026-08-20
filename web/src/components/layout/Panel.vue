@@ -1,10 +1,10 @@
 <template>
-  <div class="border-wp-background-400 dark:border-wp-background-100 w-full overflow-hidden rounded-md border">
+  <div class="lha-ci-panel w-full overflow-hidden">
     <component
       :is="collapsable ? 'button' : 'div'"
       v-if="title"
       type="button"
-      class="bg-wp-control-neutral-100 text-wp-text-100 flex w-full gap-2 px-4 py-2 font-bold"
+      class="lha-ci-panel__title flex w-full gap-2 px-4 py-2 font-bold"
       :class="{
         'cursor-pointer': collapsable,
       }"
@@ -43,11 +43,20 @@ const props = defineProps<{
   collapsedByDefault?: boolean;
 }>();
 
-/**
- * _collapsed is used to store the internal state of the panel, but is
- * ignored if the panel is not collapsable.
- */
 const _collapsed = ref(props.collapsedByDefault || false);
-
 const collapsed = computed(() => props.collapsable && _collapsed.value);
 </script>
+
+<style scoped>
+.lha-ci-panel {
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.9rem;
+  background: var(--lha-ci-surface);
+}
+
+.lha-ci-panel__title {
+  border-bottom: 1px solid var(--lha-ci-border);
+  background: var(--lha-ci-surface-muted);
+  color: var(--wp-text-200);
+}
+</style>
