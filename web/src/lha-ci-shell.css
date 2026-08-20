@@ -1,4 +1,5 @@
-.lha-ci-shell-intro {
+.lha-ci-shell-intro,
+.lha-ci-workspace-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -12,13 +13,43 @@
     var(--lha-ci-surface);
 }
 
-.lha-ci-shell-intro__copy { min-width: 0; }
-.lha-ci-shell-intro__title { margin: 0; color: var(--wp-text-200); font-size: 1.05rem; font-weight: 760; }
-.lha-ci-shell-intro__text { max-width: 680px; margin: 0.3rem 0 0; color: var(--wp-text-alt-100); font-size: 0.86rem; line-height: 1.5; }
-.lha-ci-shell-intro__context { display: flex; flex-shrink: 0; flex-direction: column; gap: 0.15rem; padding: 0.65rem 0.8rem; border: 1px solid var(--lha-ci-border); border-radius: 0.7rem; background: var(--lha-ci-surface-muted); text-align: right; }
-.lha-ci-shell-intro__context span { color: var(--wp-text-alt-100); font-size: 0.66rem; font-weight: 760; letter-spacing: 0.08em; text-transform: uppercase; }
-.lha-ci-shell-intro__context strong { max-width: 260px; overflow: hidden; color: var(--wp-text-200); font-size: 0.84rem; text-overflow: ellipsis; white-space: nowrap; }
+.lha-ci-shell-intro__copy,
+.lha-ci-workspace-head__copy { min-width: 0; }
+.lha-ci-shell-intro__title,
+.lha-ci-workspace-head__title { margin: 0; color: var(--wp-text-200); font-size: 1.05rem; font-weight: 760; }
+.lha-ci-shell-intro__text,
+.lha-ci-workspace-head__text { max-width: 680px; margin: 0.3rem 0 0; color: var(--wp-text-alt-100); font-size: 0.86rem; line-height: 1.5; }
+.lha-ci-shell-intro__context,
+.lha-ci-workspace-head__context { display: flex; flex-shrink: 0; flex-direction: column; gap: 0.15rem; padding: 0.65rem 0.8rem; border: 1px solid var(--lha-ci-border); border-radius: 0.7rem; background: var(--lha-ci-surface-muted); text-align: right; }
+.lha-ci-shell-intro__context span,
+.lha-ci-workspace-head__context span { color: var(--wp-text-alt-100); font-size: 0.66rem; font-weight: 760; letter-spacing: 0.08em; text-transform: uppercase; }
+.lha-ci-shell-intro__context strong,
+.lha-ci-workspace-head__context strong { max-width: 260px; overflow: hidden; color: var(--wp-text-200); font-size: 0.84rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.lha-ci-workspace-card {
+  overflow: hidden;
+  border: 1px solid var(--lha-ci-border) !important;
+  border-radius: 1rem !important;
+  background: var(--lha-ci-surface) !important;
+}
+
+.lha-ci-workspace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lha-ci-workspace-list > * {
+  border-color: var(--lha-ci-border) !important;
+}
+
 .lha-ci-nav-shell :where([role='tablist']) { border-color: var(--lha-ci-border); }
 .lha-ci-nav-shell :where(form, .panel, section) { border-color: var(--lha-ci-border); }
 .lha-ci-nav-shell :where(.rounded-md.border, .rounded-lg.border, .rounded-xl.border) { background-color: var(--lha-ci-surface); border-color: var(--lha-ci-border); }
-@media (max-width: 720px) { .lha-ci-shell-intro { align-items: stretch; flex-direction: column; } .lha-ci-shell-intro__context { text-align: left; } }
+
+@media (max-width: 720px) {
+  .lha-ci-shell-intro,
+  .lha-ci-workspace-head { align-items: stretch; flex-direction: column; }
+  .lha-ci-shell-intro__context,
+  .lha-ci-workspace-head__context { text-align: left; }
+}
