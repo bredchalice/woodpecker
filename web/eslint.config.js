@@ -103,7 +103,11 @@ export default antfu(
   {
     files: [
       'src/components/layout/header/Navbar.vue',
+      'src/components/repo/RepoItem.vue',
       'src/components/repo/pipeline/PipelineItem.vue',
+      'src/views/Login.vue',
+      'src/views/RepoAdd.vue',
+      'src/views/Repos.vue',
       'src/views/repo/RepoManualPipeline.vue',
       'src/views/repo/RepoPipelines.vue',
       'src/views/repo/pipeline/Pipeline.vue',
