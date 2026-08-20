@@ -43,9 +43,48 @@
   border-color: var(--lha-ci-border) !important;
 }
 
-.lha-ci-nav-shell :where([role='tablist']) { border-color: var(--lha-ci-border); }
-.lha-ci-nav-shell :where(form, .panel, section) { border-color: var(--lha-ci-border); }
-.lha-ci-nav-shell :where(.rounded-md.border, .rounded-lg.border, .rounded-xl.border) { background-color: var(--lha-ci-surface); border-color: var(--lha-ci-border); }
+.lha-ci-settings-panel {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.lha-ci-settings-head {
+  margin: -1rem -1rem 1rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid var(--lha-ci-border);
+  background:
+    linear-gradient(180deg, var(--lha-ci-accent-soft), transparent 72%),
+    var(--lha-ci-surface-muted);
+}
+
+.lha-ci-settings-head__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lha-ci-settings-head__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1.15rem;
+  font-weight: 760;
+  letter-spacing: -0.015em;
+}
+
+.lha-ci-settings-head__description {
+  max-width: 760px;
+  margin: 0;
+  color: var(--wp-text-alt-100);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.lha-ci-settings-body {
+  min-width: 0;
+}
 
 @media (max-width: 720px) {
   .lha-ci-shell-intro,
