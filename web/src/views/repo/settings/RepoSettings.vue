@@ -1,5 +1,5 @@
 <template>
-  <Scaffold enable-tabs :go-back="goBack" class="lha-ci-nav-shell">
+  <Scaffold enable-tabs :go-back="goBack">
     <template #title>
       <span>
         <router-link :to="{ name: 'org', params: { orgId: repo.org_id } }" class="hover:underline">{{ repo!.owner }}</router-link>
