@@ -1,47 +1,47 @@
 .ansi-black-fg {
-  color: #374151;
+  color: #4b5563;
 }
 .ansi-red-fg {
-  color: #cc0000;
+  color: #dc2626;
 }
 .ansi-green-fg {
-  color: #4e9a06;
+  color: #16a34a;
 }
 .ansi-yellow-fg {
-  color: #c4a000;
+  color: #ca8a04;
 }
 .ansi-blue-fg {
-  color: #729fcf;
+  color: #2563eb;
 }
 .ansi-magenta-fg {
-  color: #75507b;
+  color: #9333ea;
 }
 .ansi-cyan-fg {
-  color: #06989a;
+  color: #0891b2;
 }
 .ansi-white-fg {
-  color: #d3d7cf;
+  color: #d1d5db;
 }
 .ansi-bright-black-fg {
-  color: #555753;
+  color: #6b7280;
 }
 .ansi-bright-red-fg {
-  color: #ef2929;
+  color: #ef4444;
 }
 .ansi-bright-green-fg {
-  color: #8ae234;
+  color: #22c55e;
 }
 .ansi-bright-yellow-fg {
-  color: #fce94f;
+  color: #eab308;
 }
 .ansi-bright-blue-fg {
-  color: #32afff;
+  color: #3b82f6;
 }
 .ansi-bright-magenta-fg {
-  color: #ad7fa8;
+  color: #c084fc;
 }
 .ansi-bright-cyan-fg {
-  color: #34e2e2;
+  color: #22d3ee;
 }
 .ansi-bright-white-fg {
   color: #ffffff;
@@ -51,145 +51,204 @@
   background-color: #374151;
 }
 .ansi-red-bg {
-  background-color: #cc0000;
+  background-color: #991b1b;
 }
 .ansi-green-bg {
-  background-color: #4e9a06;
+  background-color: #166534;
 }
 .ansi-yellow-bg {
-  background-color: #c4a000;
+  background-color: #854d0e;
 }
 .ansi-blue-bg {
-  background-color: #729fcf;
+  background-color: #1d4ed8;
 }
 .ansi-magenta-bg {
-  background-color: #75507b;
+  background-color: #7e22ce;
 }
 .ansi-cyan-bg {
-  background-color: #06989a;
+  background-color: #0e7490;
 }
 .ansi-white-bg {
-  background-color: #d3d7cf;
+  background-color: #d1d5db;
 }
 .ansi-bright-black-bg {
-  background-color: #555753;
+  background-color: #4b5563;
 }
 .ansi-bright-red-bg {
-  background-color: #ef2929;
+  background-color: #dc2626;
 }
 .ansi-bright-green-bg {
-  background-color: #8ae234;
+  background-color: #16a34a;
 }
 .ansi-bright-yellow-bg {
-  background-color: #fce94f;
+  background-color: #ca8a04;
 }
 .ansi-bright-blue-bg {
-  background-color: #32afff;
+  background-color: #2563eb;
 }
 .ansi-bright-magenta-bg {
-  background-color: #ad7fa8;
+  background-color: #9333ea;
 }
 .ansi-bright-cyan-bg {
-  background-color: #34e2e2;
+  background-color: #0891b2;
 }
 .ansi-bright-white-bg {
-  background-color: #ffffff;
+  background-color: #f9fafb;
 }
 
 .dark .ansi-black-fg {
-  color: #666666;
+  color: #6b7280;
 }
 .dark .ansi-red-fg {
-  color: #ff7070;
+  color: #f87171;
 }
 .dark .ansi-green-fg {
-  color: #b0f986;
+  color: #86efac;
 }
 .dark .ansi-yellow-fg {
-  color: #c6c502;
+  color: #fde047;
 }
 .dark .ansi-blue-fg {
-  color: #8db7e0;
+  color: #93c5fd;
 }
 .dark .ansi-magenta-fg {
-  color: #f271fb;
+  color: #d8b4fe;
 }
 .dark .ansi-cyan-fg {
-  color: #6bf7ff;
+  color: #67e8f9;
 }
 .dark .ansi-white-fg {
-  color: #9ca3af;
+  color: #d1d5db;
 }
 .dark .ansi-bright-black-fg {
-  color: #838887;
+  color: #9ca3af;
 }
 .dark .ansi-bright-red-fg {
-  color: #ff3333;
+  color: #fca5a5;
 }
 .dark .ansi-bright-green-fg {
-  color: #00ff00;
+  color: #bbf7d0;
 }
 .dark .ansi-bright-yellow-fg {
-  color: #fffc67;
+  color: #fef08a;
 }
 .dark .ansi-bright-blue-fg {
-  color: #6871ff;
+  color: #bfdbfe;
 }
 .dark .ansi-bright-magenta-fg {
-  color: #ff76ff;
+  color: #e9d5ff;
 }
 .dark .ansi-bright-cyan-fg {
-  color: #60fcff;
+  color: #a5f3fc;
 }
 .dark .ansi-bright-white-fg {
-  color: #e6e3e3;
+  color: #ffffff;
 }
 
 .dark .ansi-black-bg {
-  background-color: #666666;
+  background-color: #374151;
 }
 .dark .ansi-red-bg {
-  background-color: #ff7070;
+  background-color: #7f1d1d;
 }
 .dark .ansi-green-bg {
-  background-color: #b0f986;
+  background-color: #14532d;
 }
 .dark .ansi-yellow-bg {
-  background-color: #c6c502;
+  background-color: #713f12;
 }
 .dark .ansi-blue-bg {
-  background-color: #8db7e0;
+  background-color: #1e3a8a;
 }
 .dark .ansi-magenta-bg {
-  background-color: #f271fb;
+  background-color: #581c87;
 }
 .dark .ansi-cyan-bg {
-  background-color: #6bf7ff;
+  background-color: #164e63;
 }
 .dark .ansi-white-bg {
   background-color: #9ca3af;
 }
 .dark .ansi-bright-black-bg {
-  background-color: #838887;
+  background-color: #4b5563;
 }
 .dark .ansi-bright-red-bg {
-  background-color: #ff3333;
+  background-color: #991b1b;
 }
 .dark .ansi-bright-green-bg {
-  background-color: #00ff00;
+  background-color: #166534;
 }
 .dark .ansi-bright-yellow-bg {
-  background-color: #fffc67;
+  background-color: #854d0e;
 }
 .dark .ansi-bright-blue-bg {
-  background-color: #6871ff;
+  background-color: #1d4ed8;
 }
 .dark .ansi-bright-magenta-bg {
-  background-color: #ff76ff;
+  background-color: #7e22ce;
 }
 .dark .ansi-bright-cyan-bg {
-  background-color: #60fcff;
+  background-color: #0e7490;
 }
 .dark .ansi-bright-white-bg {
-  background-color: #e6e3e3;
+  background-color: #e5e7eb;
+}
+
+/* LHA Play CI console hierarchy. Keep process-provided ANSI colors intact while
+ * making plain-text CI output easier to scan. */
+.code-box-log {
+  --lha-console-command: #93c5fd;
+  --lha-console-link: #67e8f9;
+  --lha-console-muted: #7f8a9d;
+  --lha-console-border: rgba(148, 163, 184, 0.14);
+  --lha-console-command-bg: rgba(59, 130, 246, 0.08);
+}
+
+.code-box-log > div:first-child {
+  border-bottom: 1px solid var(--lha-console-border);
+}
+
+.code-box-log .sticky[class*='col-span-3'] {
+  border: 1px solid var(--lha-console-border);
+  background-color: var(--lha-console-command-bg) !important;
+  color: var(--lha-console-command);
+  font-weight: 650;
+}
+
+.code-box-log .sticky[class*='col-span-3']:hover {
+  background-color: rgba(59, 130, 246, 0.14) !important;
+}
+
+.code-box-log a[href^='#L'] {
+  color: var(--lha-console-muted);
+  opacity: 0.82;
+}
+
+.code-box-log a[href^='#L']:hover {
+  color: var(--lha-console-link);
+  opacity: 1;
+}
+
+.code-box-log a[target='_blank'] {
+  color: var(--lha-console-link);
+  text-decoration-color: color-mix(in srgb, var(--lha-console-link) 60%, transparent);
+  text-underline-offset: 0.15em;
+}
+
+.code-box-log a[target='_blank']:hover {
+  color: #a5f3fc;
+}
+
+.code-box-log .bg-red-600\/40,
+.dark .code-box-log .dark\:bg-red-800\/50 {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.code-box-log .bg-yellow-600\/40,
+.dark .code-box-log .dark\:bg-yellow-800\/50 {
+  box-shadow: inset 3px 0 0 #eab308;
+}
+
+.code-box-log > div:last-child {
+  border-top: 1px solid var(--lha-console-border);
 }
