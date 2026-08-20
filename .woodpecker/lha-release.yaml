@@ -81,10 +81,10 @@ steps:
           exit 1
         fi
         rm -rf /tmp/lha-infrastructure-versions
-        GITOPS_URL="https://x-access-token:$GITOPS_TOKEN@github.com/bredchalice/lha-infrastructure-versions.git"
-        git clone --depth=1 --branch master "$GITOPS_URL" /tmp/lha-infrastructure-versions
+        GITOPS_REPO="https://github.com/bredchalice/lha-infrastructure-versions.git"
+        GITOPS_AUTH="$(printf 'x-access-token:%s' "$GITOPS_TOKEN" | base64 | tr -d '\n')"
+        git -c "http.extraHeader=Authorization: Basic $GITOPS_AUTH" clone --depth=1 --branch master "$GITOPS_REPO" /tmp/lha-infrastructure-versions
         cd /tmp/lha-infrastructure-versions
-        git remote set-url origin https://github.com/bredchalice/lha-infrastructure-versions.git
         KUSTOMIZATION=apps/woodpecker/kustomization.yaml
         test -f "$KUSTOMIZATION"
         sed -i "s#newTag: v3\.17-lha\(-[0-9][0-9.]*\)\{0,1\}#newTag: $CI_COMMIT_TAG#g" "$KUSTOMIZATION"
@@ -98,7 +98,7 @@ steps:
         git config user.email "ci@lhaplay.com"
         git add "$KUSTOMIZATION"
         git commit -m "deploy(woodpecker): $CI_COMMIT_TAG"
-        git push "$GITOPS_URL" HEAD:master
+        git -c "http.extraHeader=Authorization: Basic $GITOPS_AUTH" push origin HEAD:master
         echo "GitOps desired version updated to $CI_COMMIT_TAG; Argo CD will reconcile it."
 
   - name: release summary
