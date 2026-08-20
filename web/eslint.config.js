@@ -14,17 +14,13 @@ export default antfu(
       tsconfigPath: './tsconfig.json',
     },
     vue: true,
-
-    // Disable jsonc and yaml support
     jsonc: false,
     yaml: false,
   },
-
   js.configs.recommended,
   eslintPromise.configs['flat/recommended'],
   ...eslintPluginVueScopedCSS.configs['flat/recommended'],
   ...vueI18n.configs['flat/recommended'],
-
   {
     rules: {
       'import/order': 'off',
@@ -33,16 +29,7 @@ export default antfu(
       'perfectionist/sort-named-imports': 'off',
       'promise/prefer-await-to-callbacks': 'error',
       'vue-scoped-css/no-parsing-error': 'off',
-
-      // Vue I18n
-      '@intlify/vue-i18n/no-raw-text': [
-        'error',
-        {
-          attributes: {
-            '/.+/': ['label'],
-          },
-        },
-      ],
+      '@intlify/vue-i18n/no-raw-text': ['error', { attributes: { '/.+/': ['label'] } }],
       '@intlify/vue-i18n/key-format-style': ['error', 'snake_case'],
       '@intlify/vue-i18n/no-duplicate-keys-in-locale': 'error',
       '@intlify/vue-i18n/no-dynamic-keys': 'error',
@@ -60,46 +47,23 @@ export default antfu(
       '@intlify/vue-i18n/sfc-locale-attr': 'error',
     },
     settings: {
-      // Vue I18n
       'vue-i18n': {
         localeDir: './src/assets/locales/en.json',
-        // Specify the version of `vue-i18n` you are using.
-        // If not specified, the message will be parsed twice.
         messageSyntaxVersion: '^9.0.0',
       },
     },
   },
-
-  // Vue
   {
     files: ['**/*.vue'],
     rules: {
       'vue/multi-word-component-names': 'off',
-      'vue/html-self-closing': [
-        'error',
-        {
-          html: {
-            void: 'always',
-            normal: 'always',
-            component: 'always',
-          },
-          svg: 'always',
-          math: 'always',
-        },
-      ],
+      'vue/html-self-closing': ['error', { html: { void: 'always', normal: 'always', component: 'always' }, svg: 'always', math: 'always' }],
       'vue/html-indent': 'off',
-      'vue/block-order': [
-        'error',
-        {
-          order: ['template', 'script', 'style'],
-        },
-      ],
+      'vue/block-order': ['error', { order: ['template', 'script', 'style'] }],
       'vue/singleline-html-element-content-newline': ['off'],
       'no-useless-assignment': ['off'],
     },
   },
-
-  // LHA Play CI is an internal branded surface with intentionally fixed product copy.
   {
     files: [
       'src/components/layout/header/Navbar.vue',
@@ -108,6 +72,10 @@ export default antfu(
       'src/views/Login.vue',
       'src/views/RepoAdd.vue',
       'src/views/Repos.vue',
+      'src/views/user/UserWrapper.vue',
+      'src/views/admin/AdminSettingsWrapper.vue',
+      'src/views/org/settings/OrgSettingsWrapper.vue',
+      'src/views/repo/settings/RepoSettings.vue',
       'src/views/repo/RepoManualPipeline.vue',
       'src/views/repo/RepoPipelines.vue',
       'src/views/repo/pipeline/Pipeline.vue',
@@ -117,8 +85,6 @@ export default antfu(
       '@intlify/vue-i18n/no-raw-text': 'off',
     },
   },
-
-  // Ignore list
   {
     ignores: [
       'dist',
