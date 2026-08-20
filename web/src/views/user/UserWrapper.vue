@@ -1,5 +1,5 @@
 <template>
-  <Scaffold enable-tabs class="lha-ci-nav-shell">
+  <Scaffold enable-tabs>
     <template #title>{{ $t('user.settings.settings') }}</template>
     <template #headerActions><Button :text="$t('logout')" :to="`${address}/logout`" /></template>
 
