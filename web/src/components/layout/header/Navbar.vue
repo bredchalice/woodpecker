@@ -1,27 +1,27 @@
 <template>
-  <nav
-    class="text-neutral-content border-wp-background-400 dark:border-wp-background-100 bg-wp-primary-200 text-wp-primary-text-100 dark:bg-wp-primary-300 flex border-b p-4 font-bold"
-  >
-    <div class="flex items-center space-x-2">
-      <router-link :to="{ name: 'home' }" class="lha-ci-brand -my-2 flex items-center gap-3 px-2">
-        <WoodpeckerLogo class="h-8 w-8 shrink-0" />
+  <nav class="lha-ci-navbar flex border-b px-4 py-3 font-bold">
+    <div class="flex min-w-0 items-center gap-2">
+      <router-link :to="{ name: 'home' }" class="lha-ci-brand flex min-w-0 items-center gap-3 pr-2">
+        <span class="lha-ci-brand__mark">
+          <WoodpeckerLogo class="h-7 w-7 shrink-0" />
+        </span>
         <span class="hidden min-w-0 flex-col sm:flex">
           <strong class="lha-ci-brand__name">LHA Play CI</strong>
           <span class="lha-ci-brand__version" :title="version?.current">{{ version?.current }}</span>
         </span>
       </router-link>
+
+      <div class="lha-ci-navbar__divider hidden h-7 w-px sm:block" />
+
       <router-link v-if="user" :to="{ name: 'repos' }" class="navbar-clickable navbar-link">
         <span class="flex md:hidden">{{ $t('repos') }}</span>
         <span class="hidden md:flex">{{ $t('repositories.title') }}</span>
       </router-link>
-      <a href="https://woodpecker-ci.org/" target="_blank" class="navbar-clickable navbar-link hidden md:flex">{{
-        $t('docs')
-      }}</a>
-      <a v-if="enableSwagger" :href="apiUrl" target="_blank" class="navbar-clickable navbar-link hidden md:flex">{{
-        $t('api')
-      }}</a>
+      <a href="https://woodpecker-ci.org/" target="_blank" class="navbar-clickable navbar-link hidden md:flex">{{ $t('docs') }}</a>
+      <a v-if="enableSwagger" :href="apiUrl" target="_blank" class="navbar-clickable navbar-link hidden md:flex">{{ $t('api') }}</a>
     </div>
-    <div class="-m-1.5 ml-auto flex items-center space-x-2">
+
+    <div class="ml-auto flex items-center gap-1.5">
       <IconButton
         v-if="user?.admin"
         class="navbar-icon relative"
@@ -29,20 +29,14 @@
         :to="{ name: 'admin-settings' }"
       >
         <Icon name="settings" />
-        <div v-if="version?.needsUpdate" class="bg-wp-error-100 absolute top-2 right-2 h-3 w-3 rounded-full" />
+        <div v-if="version?.needsUpdate" class="bg-wp-error-100 absolute top-2 right-2 h-2.5 w-2.5 rounded-full" />
       </IconButton>
 
       <ActivePipelines v-if="user" class="navbar-icon p-1.5!" />
       <IconButton v-if="user" :to="{ name: 'user' }" :title="$t('user.settings.settings')" class="navbar-icon p-1.5!">
-        <img v-if="user && user.avatar_url" class="rounded-md" :src="`${user.avatar_url}`" />
+        <img v-if="user.avatar_url" class="rounded-md" :src="user.avatar_url" />
       </IconButton>
-      <Button
-        v-else
-        :text="$t('login')"
-        :to="{ name: 'login' }"
-        class="navbar-link !text-wp-primary-text-100 bg-wp-primary-200 dark:bg-wp-primary-300 !border-transparent"
-        @click="saveRedirect"
-      />
+      <Button v-else :text="$t('login')" :to="{ name: 'login' }" class="navbar-login" @click="saveRedirect" />
     </div>
   </nav>
 </template>
@@ -65,10 +59,8 @@ const version = useVersion();
 const config = useConfig();
 const userConfig = useUserConfig();
 const route = useRoute();
-const authentication = useAuthentication();
-const { user } = authentication;
+const { user } = useAuthentication();
 const apiUrl = `${config.rootPath ?? ''}/swagger/index.html`;
-
 const { enableSwagger } = config;
 
 function saveRedirect() {
@@ -77,34 +69,93 @@ function saveRedirect() {
 </script>
 
 <style scoped>
-@reference '~/tailwind.css';
+.lha-ci-navbar {
+  position: relative;
+  z-index: 30;
+  border-color: var(--lha-ci-border);
+  background: color-mix(in srgb, var(--lha-ci-surface) 94%, var(--lha-ci-accent) 6%);
+  color: var(--wp-text-200);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+
+.lha-ci-navbar::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--lha-ci-accent), transparent);
+  content: '';
+  opacity: 0.45;
+}
 
 .lha-ci-brand {
+  color: var(--wp-text-200);
   text-decoration: none;
+}
+
+.lha-ci-brand__mark {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--lha-ci-accent) 28%, var(--lha-ci-border));
+  border-radius: 0.75rem;
+  background: var(--lha-ci-accent-soft);
 }
 
 .lha-ci-brand__name {
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .lha-ci-brand__version {
-  margin-top: 0.2rem;
-  font-size: 0.65rem;
-  font-weight: 600;
+  max-width: 13rem;
+  margin-top: 0.18rem;
+  overflow: hidden;
+  color: var(--wp-text-alt-100);
+  font-size: 0.62rem;
+  font-weight: 650;
   line-height: 1;
-  opacity: 0.72;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lha-ci-navbar__divider {
+  background: var(--lha-ci-border);
 }
 
 .navbar-icon {
-  @apply h-11 w-11 rounded-md p-2.5 hover:bg-black/20 dark:hover:bg-white/5;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.55rem;
+  border-radius: 0.7rem;
+  color: var(--wp-text-100);
+}
+
+.navbar-icon:hover,
+.navbar-link:hover {
+  background: var(--lha-ci-accent-soft);
+  color: var(--wp-text-200);
 }
 
 .navbar-icon :deep(svg) {
-  @apply h-full w-full;
+  width: 100%;
+  height: 100%;
 }
 
 .navbar-link {
-  @apply -my-1 rounded-md px-3 py-2 hover:bg-black/20 dark:hover:bg-white/5;
+  margin-block: -0.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.65rem;
+  color: var(--wp-text-100);
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.navbar-login {
+  border-color: var(--lha-ci-accent) !important;
+  background: var(--lha-ci-accent-soft) !important;
+  color: var(--wp-text-200) !important;
 }
 </style>
