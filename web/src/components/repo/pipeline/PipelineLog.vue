@@ -17,9 +17,15 @@
       <div
         class="bg-wp-code-100 fixed top-0 left-0 flex w-full flex-row items-center px-4 py-2 md:relative md:top-auto md:left-auto"
       >
-        <span class="text-wp-code-text-alt-100 text-base font-bold">
+        <span class="text-wp-code-text-alt-100 flex min-w-0 items-center gap-2 text-base font-bold">
           <span class="md:display-unset hidden">{{ $t('repo.pipeline.log_title') }}</span>
           <span class="md:hidden">{{ step?.name }}</span>
+          <span v-if="semanticErrorCount > 0" class="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">
+            {{ semanticErrorCount }} error{{ semanticErrorCount === 1 ? '' : 's' }}
+          </span>
+          <span v-if="semanticWarningCount > 0" class="rounded-full bg-yellow-500/15 px-2 py-0.5 text-xs text-yellow-300">
+            {{ semanticWarningCount }} warning{{ semanticWarningCount === 1 ? '' : 's' }}
+          </span>
         </span>
 
         <div class="ml-auto flex flex-row items-center gap-x-2">
@@ -247,15 +253,8 @@ const logBuffer = ref<LogLine[]>([]);
 const config = useConfig();
 const maxLineCount = config.maxPipelineLogLineCount;
 const hasPushPermission = computed(() => repoPermissions?.value?.push);
-const stepFailed = computed(() => step.value?.state === 'failure' || step.value?.state === 'error');
-const failureHint = computed(() => {
-  if (!stepFailed.value) return '';
-  const errorLine = [...(log.value ?? [])].reverse().find((line) => line.type === 'error');
-  return errorLine?.rawText?.replace(ansiEscapeRegex, '').trim() ?? '';
-});
 
 const collapsedCommands = ref(new Set<number>());
-
 const commandRegex = /^\s*-\s(.+)$/gm;
 const specialCharsRegex = /[.*+?^${}()|[\]\\]/g;
 const matrixVariableRegex = /\\\$(\\\{\w+\\\})/g;
@@ -263,17 +262,29 @@ const ansiEscapeRegex = /\x1B\[[0-?]*[ -/]*[@-~]/g;
 const zeroProblemRegex = /\b(?:0\s+(?:errors?|warnings?|failures?|failed)|no\s+(?:errors?|warnings?|failures?))\b/i;
 const errorPatterns = [
   /(?:^|\s)(?:error|fatal|panic|exception)(?:\s|:|$)/i,
+  /^FAIL(?:\s|$)/,
   /\b(?:failed|failure)\b/i,
   /\berror\s+TS\d+:/i,
   /\b(?:npm|yarn|pnpm)\s+ERR!/i,
+  /\b[1-9]\d*\s+errors?\b/i,
   /\b(?:exit(?:ed)?|returned)\s+(?:with\s+)?(?:code|status)\s+[1-9]\d*\b/i,
   /\bcommand\b.*\bfailed\b/i,
   /\bprocess\b.*\b(?:failed|exited)\b/i,
 ];
 const warningPatterns = [
   /(?:^|\s)warn(?:ing)?(?:\s|:|$)/i,
+  /\b[1-9]\d*\s+warnings?\b/i,
   /\bdeprecat(?:ed|ion)\b/i,
 ];
+
+const stepFailed = computed(() => step.value?.state === 'failure' || step.value?.state === 'error');
+const semanticErrorCount = computed(() => log.value?.filter((line) => line.type === 'error').length ?? 0);
+const semanticWarningCount = computed(() => log.value?.filter((line) => line.type === 'warning').length ?? 0);
+const failureHint = computed(() => {
+  if (!stepFailed.value) return '';
+  const errorLine = [...(log.value ?? [])].reverse().find((line) => line.type === 'error');
+  return errorLine?.rawText?.replace(ansiEscapeRegex, '').trim() ?? '';
+});
 
 function classifyLogLine(rawText: string): LogLine['type'] {
   const text = rawText.replace(ansiEscapeRegex, '').trim();
@@ -577,14 +588,29 @@ const expandLogGroupWithPageHash = (hash: string) => {
   }
 };
 
+const expandFirstSemanticError = async () => {
+  if (!stepFailed.value || route.hash) return;
+  const errorLine = log.value?.find((line) => line.type === 'error');
+  if (!errorLine) return;
+
+  const parentGroup = groupedLogs.value.find(
+    (group) => errorLine.number === group.id || group.lines.some((line) => line.number === errorLine.number),
+  );
+  if (parentGroup) collapsedCommands.value.delete(parentGroup.id);
+
+  await nextTick();
+  document.getElementById(`L${errorLine.number}`)?.scrollIntoView({ block: 'center' });
+};
+
 watch(loadedLogs, async (isLoaded, wasLoaded) => {
-  if (isLoaded && !wasLoaded && userConfig.value.collapseLogGroupsByDefault) {
+  if (isLoaded && !wasLoaded) {
     const isFinished = step.value && !['running', 'pending', 'started'].includes(step.value.state);
-    if (isFinished) {
+    if (userConfig.value.collapseLogGroupsByDefault && isFinished) {
       await nextTick();
       collapseAll();
       expandLogGroupWithPageHash(route.hash);
     }
+    await expandFirstSemanticError();
   }
 });
 
