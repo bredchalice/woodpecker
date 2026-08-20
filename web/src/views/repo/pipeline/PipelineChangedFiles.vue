@@ -1,9 +1,23 @@
 <template>
-  <Panel>
-    <div class="w-full">
-      <FileTree v-for="node in fileTree" :key="node.name" :node="node" :depth="0" />
-    </div>
-  </Panel>
+  <div>
+    <header class="lha-ci-workspace-head">
+      <div class="lha-ci-workspace-head__copy">
+        <p class="lha-ci-kicker">Pipeline source</p>
+        <h2 class="lha-ci-workspace-head__title">Changed files</h2>
+        <p class="lha-ci-workspace-head__text">Files associated with build #{{ pipeline.number }} and the source revision validated by this run.</p>
+      </div>
+      <div class="lha-ci-workspace-head__context">
+        <span>Files</span>
+        <strong>{{ pipeline.changed_files?.length ?? 0 }}</strong>
+      </div>
+    </header>
+
+    <Panel class="lha-ci-workspace-card">
+      <div class="w-full">
+        <FileTree v-for="node in fileTree" :key="node.name" :node="node" :depth="0" />
+      </div>
+    </Panel>
+  </div>
 </template>
 
 <script lang="ts" setup>
