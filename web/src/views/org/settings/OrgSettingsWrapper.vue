@@ -1,5 +1,5 @@
 <template>
-  <Scaffold v-if="org" enable-tabs :go-back="goBack" class="lha-ci-nav-shell">
+  <Scaffold v-if="org" enable-tabs :go-back="goBack">
     <template #title>
       <span><router-link :to="{ name: 'org' }" class="hover:underline">{{ org.name }}</router-link> / {{ $t('settings') }}</span>
     </template>
