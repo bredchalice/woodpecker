@@ -82,7 +82,7 @@ steps:
         fi
         rm -rf /tmp/lha-infrastructure-versions
         GITOPS_REPO="https://github.com/bredchalice/lha-infrastructure-versions.git"
-        GITOPS_AUTH="$(printf 'x-access-token:%s' "$GITOPS_TOKEN" | base64 | tr -d '\n')"
+        GITOPS_AUTH="$(printf 'bredchalice:%s' "$GITOPS_TOKEN" | base64 | tr -d '\n')"
         git -c "http.extraHeader=Authorization: Basic $GITOPS_AUTH" clone --depth=1 --branch master "$GITOPS_REPO" /tmp/lha-infrastructure-versions
         cd /tmp/lha-infrastructure-versions
         KUSTOMIZATION=apps/woodpecker/kustomization.yaml
