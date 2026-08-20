@@ -1,0 +1,494 @@
+.lha-ci-login {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at 15% 15%, var(--lha-ci-accent-soft), transparent 32%),
+    radial-gradient(circle at 90% 85%, var(--lha-ci-accent-soft), transparent 28%),
+    var(--wp-background-200);
+}
+
+.lha-ci-login::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--lha-ci-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lha-ci-border) 1px, transparent 1px);
+  background-size: 52px 52px;
+  content: '';
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.22), transparent 80%);
+  pointer-events: none;
+}
+
+.lha-ci-login__error {
+  position: absolute;
+  top: 1.5rem;
+  z-index: 2;
+  width: min(920px, calc(100% - 3rem));
+}
+
+.lha-ci-login__shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(980px, 100%);
+  min-height: 560px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  overflow: hidden;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 1.5rem;
+  background: var(--lha-ci-surface);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.18);
+}
+
+.lha-ci-login__brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 3rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.13), transparent 30%),
+    linear-gradient(145deg, var(--lha-ci-accent), #4938d6 72%);
+  color: white;
+}
+
+.lha-ci-login__brand .lha-ci-kicker {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.lha-ci-login__mark {
+  display: flex;
+  width: 7.5rem;
+  height: 7.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.lha-ci-login__title {
+  margin: 0;
+  font-size: clamp(3.4rem, 9vw, 6.25rem);
+  font-weight: 850;
+  letter-spacing: -0.07em;
+  line-height: 0.9;
+}
+
+.lha-ci-login__intro {
+  max-width: 32rem;
+  margin: 1rem 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.lha-ci-login__signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: auto;
+}
+
+.lha-ci-login__signals span {
+  padding: 0.42rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.lha-ci-login__auth {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2rem;
+  padding: 3rem;
+}
+
+.lha-ci-login__auth-title {
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1.7rem;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.lha-ci-login__auth-copy {
+  margin: 0.65rem 0 0;
+  color: var(--wp-text-alt-100);
+  line-height: 1.55;
+}
+
+.lha-ci-login__providers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lha-ci-login__provider {
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 3rem;
+}
+
+.lha-ci-login__footnote {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--wp-text-alt-100);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.lha-ci-login__status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--wp-state-ok-100);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--wp-state-ok-100) 16%, transparent);
+}
+
+.lha-ci-repos,
+.lha-ci-enable {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.lha-ci-repos__hero,
+.lha-ci-enable__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top right, var(--lha-ci-accent-soft), transparent 34%),
+    var(--lha-ci-surface);
+}
+
+.lha-ci-repos__title,
+.lha-ci-enable__title {
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1.65rem;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.lha-ci-repos__intro,
+.lha-ci-enable__intro {
+  max-width: 650px;
+  margin: 0.55rem 0 0;
+  color: var(--wp-text-alt-100);
+  line-height: 1.55;
+}
+
+.lha-ci-repos__stats {
+  display: grid;
+  min-width: 310px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.lha-ci-repos__stats > div,
+.lha-ci-enable__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.75rem;
+  background: var(--lha-ci-surface-muted);
+}
+
+.lha-ci-repos__stats span,
+.lha-ci-enable__summary span {
+  color: var(--wp-text-alt-100);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lha-ci-repos__stats strong,
+.lha-ci-enable__summary strong {
+  color: var(--wp-text-200);
+  font-size: 1.25rem;
+}
+
+.lha-ci-repos__sections {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.lha-ci-repos__section,
+.lha-ci-enable__list {
+  padding: 1.25rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 1rem;
+  background: var(--lha-ci-surface);
+}
+
+.lha-ci-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.lha-ci-section-heading h2 {
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1.05rem;
+  font-weight: 720;
+}
+
+.lha-ci-section-heading span {
+  color: var(--wp-text-alt-100);
+  font-size: 0.85rem;
+}
+
+.lha-ci-repo-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 0.85rem;
+  background: var(--lha-ci-surface-muted);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.lha-ci-repo-card:hover {
+  border-color: var(--lha-ci-accent);
+  background: var(--lha-ci-surface);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.lha-ci-repo-card__top,
+.lha-ci-repo-card__activity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lha-ci-repo-card__owner {
+  display: block;
+  overflow: hidden;
+  color: var(--wp-text-alt-100);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lha-ci-repo-card__name {
+  display: block;
+  overflow: hidden;
+  color: var(--wp-text-200);
+  font-size: 1rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lha-ci-repo-card__message {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--wp-text-100);
+}
+
+.lha-ci-repo-card__since,
+.lha-ci-repo-card__empty {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--wp-text-alt-100);
+  font-size: 0.78rem;
+}
+
+.lha-ci-enable__summary {
+  min-width: 120px;
+  text-align: right;
+}
+
+.lha-ci-enable__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lha-ci-enable__conflict {
+  display: flex;
+  flex-direction: column;
+}
+
+.lha-ci-enable__item {
+  border-color: var(--lha-ci-border) !important;
+  background: var(--lha-ci-surface-muted) !important;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.lha-ci-enable__item:hover {
+  border-color: var(--lha-ci-accent) !important;
+  background: var(--lha-ci-surface) !important;
+}
+
+.lha-ci-enable__repo-name {
+  display: block;
+  color: var(--wp-text-200);
+  font-weight: 680;
+}
+
+.lha-ci-enable__meta {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--wp-text-alt-100);
+  font-size: 0.76rem;
+}
+
+.lha-ci-enable__state {
+  color: var(--wp-state-ok-100);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.lha-ci-empty-state {
+  display: flex;
+  min-height: 10rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--wp-text-alt-100);
+  text-align: center;
+}
+
+.lha-ci-shell-header {
+  border-bottom-color: var(--lha-ci-border) !important;
+  background:
+    linear-gradient(180deg, var(--lha-ci-accent-soft), transparent 110%),
+    var(--wp-background-100) !important;
+}
+
+.lha-ci-shell-content {
+  padding-top: 1.5rem !important;
+  padding-bottom: 2.5rem !important;
+}
+
+.lha-ci-shell-content > :first-child {
+  position: relative;
+}
+
+.lha-ci-shell-content :where(.border) {
+  border-color: var(--lha-ci-border);
+}
+
+.lha-ci-shell-content :where(.rounded-md.border, .rounded-lg.border) {
+  border-radius: 0.8rem;
+  background-color: var(--lha-ci-surface);
+}
+
+.lha-ci-shell-content :where(input, textarea, select) {
+  border-color: var(--lha-ci-border);
+}
+
+.lha-ci-shell-content :where(input, textarea, select):focus-visible {
+  outline: 2px solid var(--lha-ci-accent);
+  outline-offset: 1px;
+}
+
+.lha-ci-shell-fluid {
+  min-height: 0;
+  background: var(--wp-background-200);
+}
+
+.lha-ci-shell-header :where(a, button):focus-visible,
+.lha-ci-shell-content :where(a, button):focus-visible {
+  outline: 2px solid var(--lha-ci-accent);
+  outline-offset: 2px;
+}
+
+/* Normalize remaining upstream cards and settings surfaces into one product language. */
+main :where(.rounded-md.border, .rounded-lg.border) {
+  border-color: var(--lha-ci-border);
+}
+
+main :where(input, textarea, select):focus-visible {
+  outline: 2px solid var(--lha-ci-accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 820px) {
+  .lha-ci-login {
+    padding: 0;
+  }
+
+  .lha-ci-login__shell {
+    min-height: 100%;
+    grid-template-columns: 1fr;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .lha-ci-login__brand,
+  .lha-ci-login__auth {
+    padding: 2rem;
+  }
+
+  .lha-ci-login__brand {
+    min-height: 320px;
+  }
+
+  .lha-ci-repos__hero,
+  .lha-ci-enable__hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lha-ci-repos__stats {
+    min-width: 0;
+  }
+
+  .lha-ci-enable__summary {
+    min-width: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 560px) {
+  .lha-ci-repos__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .lha-ci-repo-card__activity {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

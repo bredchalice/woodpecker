@@ -1,8 +1,18 @@
 <template>
-  <div class="mb-4 flex w-full justify-center">
-    <span class="text-wp-text-100 text-xl">{{ $t('repo.pipeline.pipelines_for_pr', { index: pullRequest }) }}</span>
+  <div class="flex flex-col gap-4">
+    <div class="lha-ci-shell-intro">
+      <div class="lha-ci-shell-intro__copy">
+        <p class="lha-ci-kicker">Pull request validation</p>
+        <h2 class="lha-ci-shell-intro__title">PR #{{ pullRequest }}</h2>
+        <p class="lha-ci-shell-intro__text">Validation runs associated with this pull request, including metadata and close events when available.</p>
+      </div>
+      <div class="lha-ci-shell-intro__context">
+        <span>Runs loaded</span>
+        <strong>{{ pipelines.length }}</strong>
+      </div>
+    </div>
+    <PipelineList :pipelines="pipelines" :repo="repo" />
   </div>
-  <PipelineList :pipelines="pipelines" :repo="repo" />
 </template>
 
 <script lang="ts" setup>
@@ -13,9 +23,7 @@ import PipelineList from '~/components/repo/pipeline/PipelineList.vue';
 import { requiredInject } from '~/compositions/useInjectProvide';
 import { useWPTitle } from '~/compositions/useWPTitle';
 
-const props = defineProps<{
-  pullRequest: string;
-}>();
+const props = defineProps<{ pullRequest: string }>();
 const pullRequest = toRef(props, 'pullRequest');
 const repo = requiredInject('repo');
 if (!repo.value.pr_enabled || !repo.value.allow_pr) {

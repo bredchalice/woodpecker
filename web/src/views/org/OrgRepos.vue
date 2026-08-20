@@ -1,8 +1,6 @@
 <template>
   <Scaffold v-if="org && orgPermissions" v-model:search="search">
-    <template #title>
-      {{ org.name }}
-    </template>
+    <template #title>{{ org.name }}</template>
 
     <template #headerActions>
       <IconButton
@@ -14,10 +12,26 @@
     </template>
 
     <div class="flex flex-col gap-4">
-      <RepoItem v-for="repo in reposLastActivity" :key="repo.id" :repo="repo" />
-    </div>
-    <div v-if="(reposLastActivity || []).length <= 0" class="text-center">
-      <span class="text-wp-text-100 m-auto">{{ $t('repo.user_none') }}</span>
+      <div class="lha-ci-shell-intro">
+        <div class="lha-ci-shell-intro__copy">
+          <p class="lha-ci-kicker">Organization workspace</p>
+          <h2 class="lha-ci-shell-intro__title">{{ org.name }}</h2>
+          <p class="lha-ci-shell-intro__text">Repositories are ordered by recent CI activity so active delivery work stays at the top.</p>
+        </div>
+        <div class="lha-ci-shell-intro__context">
+          <span>Repositories</span>
+          <strong>{{ reposLastActivity.length }}</strong>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <RepoItem v-for="repo in reposLastActivity" :key="repo.id" :repo="repo" />
+      </div>
+
+      <div v-if="reposLastActivity.length <= 0" class="lha-ci-empty-state">
+        <strong>{{ $t('repo.user_none') }}</strong>
+        <span>No repository activity matches this view.</span>
+      </div>
     </div>
   </Scaffold>
 </template>
@@ -37,19 +51,15 @@ import { useRepoStore } from '~/store/repos';
 
 const repoStore = useRepoStore();
 const { repoWithLastPipeline, sortReposByLastActivity } = useRepos();
-
 const org = requiredInject('org');
 const orgPermissions = requiredInject('org-permissions');
-
 const search = ref('');
-const repos = computed(() =>
-  [...repoStore.repos.values()].filter((repo) => repo.org_id === org.value?.id).map(repoWithLastPipeline),
-);
+const repos = computed(() => [...repoStore.repos.values()].filter((repo) => repo.org_id === org.value?.id).map(repoWithLastPipeline));
 const { searchedRepos } = useRepoSearch(repos, search);
 const reposLastActivity = computed(() => sortReposByLastActivity(searchedRepos.value || []));
 
 onMounted(async () => {
-  await repoStore.loadRepos(); // TODO: load only org repos
+  await repoStore.loadRepos();
 });
 
 const { t } = useI18n();

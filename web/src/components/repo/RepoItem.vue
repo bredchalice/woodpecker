@@ -2,11 +2,14 @@
   <router-link
     v-if="repo"
     :to="{ name: 'repo', params: { repoId: repo.id } }"
-    class="border-wp-background-400 dark:border-wp-background-100 bg-wp-background-200 dark:bg-wp-background-200 hover:bg-wp-control-neutral-100 dark:hover:bg-wp-control-neutral-200 flex cursor-pointer flex-col overflow-hidden rounded-md border p-4"
+    class="lha-ci-repo-card"
   >
-    <div class="grid grid-cols-[auto_1fr] items-center gap-y-4">
-      <div class="text-wp-text-100 text-lg">{{ `${repo.owner} / ${repo.name}` }}</div>
-      <div class="text-wp-text-100 ml-auto">
+    <div class="lha-ci-repo-card__top">
+      <div class="min-w-0">
+        <span class="lha-ci-repo-card__owner">{{ repo.owner }}</span>
+        <strong class="lha-ci-repo-card__name">{{ repo.name }}</strong>
+      </div>
+      <div class="text-wp-text-alt-100">
         <div
           v-if="repo.visibility === RepoVisibility.Private"
           :title="`${$t('repo.visibility.visibility')}: ${$t(`repo.visibility.private.private`)}`"
@@ -20,28 +23,27 @@
           <Icon name="visibility-internal" />
         </div>
       </div>
+    </div>
 
-      <div class="text-wp-text-100 col-span-2 flex w-full gap-x-4">
-        <template v-if="lastPipeline">
-          <div class="flex min-w-0 flex-1 items-center gap-x-1">
-            <PipelineStatusIcon v-if="lastPipeline" :status="lastPipeline.status" />
-            <RenderMarkdown
-              class="overflow-hidden pl-1 text-ellipsis whitespace-nowrap"
-              :title="message"
-              :content="shortMessage"
-              inline
-            />
-          </div>
-
-          <div class="ml-auto flex shrink-0 items-center gap-x-1">
-            <Icon name="since" />
-            <span>{{ since }}</span>
-          </div>
-        </template>
-
-        <div v-else class="flex gap-x-2">
-          <span>{{ $t('repo.pipeline.no_pipelines') }}</span>
+    <div class="lha-ci-repo-card__activity">
+      <template v-if="lastPipeline">
+        <div class="lha-ci-repo-card__message">
+          <PipelineStatusIcon :status="lastPipeline.status" />
+          <RenderMarkdown
+            class="overflow-hidden text-ellipsis whitespace-nowrap"
+            :title="message"
+            :content="shortMessage"
+            inline
+          />
         </div>
+        <div class="lha-ci-repo-card__since">
+          <Icon name="since" />
+          <span>{{ since }}</span>
+        </div>
+      </template>
+
+      <div v-else class="lha-ci-repo-card__empty">
+        <span>{{ $t('repo.pipeline.no_pipelines') }}</span>
       </div>
     </div>
   </router-link>

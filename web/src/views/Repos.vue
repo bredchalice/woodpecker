@@ -9,35 +9,68 @@
       <Button start-icon="refresh" :is-loading="isRefreshing" :text="$t('repo.refresh')" @click="refreshRepositories" />
     </template>
 
-    <Transition name="fade" mode="out-in">
-      <div v-if="search === '' && repos.length > 0" class="grid gap-8">
-        <div v-if="reposLastAccess.length > 0 && repos.length > 4" class="flex flex-col gap-4">
+    <div class="lha-ci-repos">
+      <section v-if="search === ''" class="lha-ci-repos__hero">
+        <div>
+          <p class="lha-ci-kicker">LHA Play CI</p>
+          <h1 class="lha-ci-repos__title">Delivery workspace</h1>
+          <p class="lha-ci-repos__intro">Follow active repositories, recent builds and release activity from one operational view.</p>
+        </div>
+        <div class="lha-ci-repos__stats">
           <div>
-            <h2 class="text-wp-text-100 text-lg">{{ $t('repositories.last.title') }}</h2>
-            <span class="text-wp-text-alt-100">{{ $t('repositories.last.desc') }}</span>
+            <span>Repositories</span>
+            <strong>{{ repos.length }}</strong>
           </div>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-            <RepoItem v-for="repo in reposLastAccess" :key="repo.id" :repo="repo" />
+          <div>
+            <span>Recent</span>
+            <strong>{{ reposLastAccess.length }}</strong>
+          </div>
+          <div>
+            <span>Visible</span>
+            <strong>{{ reposLastActivity.length }}</strong>
           </div>
         </div>
+      </section>
 
-        <div class="flex flex-col gap-4">
-          <div>
-            <h2 class="text-wp-text-100 text-lg">{{ $t('repositories.all.title') }}</h2>
-            <span class="text-wp-text-alt-100">{{ $t('repositories.all.desc') }}</span>
-          </div>
-          <div class="flex flex-col gap-4">
+      <Transition name="fade" mode="out-in">
+        <div v-if="search === '' && repos.length > 0" class="lha-ci-repos__sections">
+          <section v-if="reposLastAccess.length > 0 && repos.length > 4" class="lha-ci-repos__section">
+            <div class="lha-ci-section-heading">
+              <div>
+                <p class="lha-ci-kicker">Resume work</p>
+                <h2>{{ $t('repositories.last.title') }}</h2>
+                <span>{{ $t('repositories.last.desc') }}</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <RepoItem v-for="repo in reposLastAccess" :key="repo.id" :repo="repo" />
+            </div>
+          </section>
+
+          <section class="lha-ci-repos__section">
+            <div class="lha-ci-section-heading">
+              <div>
+                <p class="lha-ci-kicker">Build activity</p>
+                <h2>{{ $t('repositories.all.title') }}</h2>
+                <span>{{ $t('repositories.all.desc') }}</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-3">
+              <RepoItem v-for="repo in reposLastActivity" :key="repo.id" :repo="repo" />
+            </div>
+          </section>
+        </div>
+        <section v-else class="lha-ci-repos__section">
+          <div v-if="reposLastActivity.length > 0" class="flex flex-col gap-3">
             <RepoItem v-for="repo in reposLastActivity" :key="repo.id" :repo="repo" />
           </div>
-        </div>
-      </div>
-      <div v-else class="flex flex-col">
-        <div v-if="reposLastActivity.length > 0" class="flex flex-col gap-4">
-          <RepoItem v-for="repo in reposLastActivity" :key="repo.id" :repo="repo" />
-        </div>
-        <span v-else class="text-wp-text-100 text-center text-lg">{{ $t('no_search_results') }}</span>
-      </div>
-    </Transition>
+          <div v-else class="lha-ci-empty-state">
+            <p class="lha-ci-kicker">Search</p>
+            <strong>{{ $t('no_search_results') }}</strong>
+          </div>
+        </section>
+      </Transition>
+    </div>
   </Scaffold>
 </template>
 

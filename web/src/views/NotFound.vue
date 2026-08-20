@@ -1,8 +1,12 @@
 <template>
-  <div class="flex h-full w-full flex-col items-center justify-center">
-    <p class="mb-8 text-2xl">{{ $t('not_found.not_found') }}</p>
-    <router-link class="text-blue-400" replace :to="{ name: 'home' }">
-      {{ $t('not_found.back_home') }}
-    </router-link>
-  </div>
+  <main class="lha-ci-state-page">
+    <section class="lha-ci-state-card">
+      <p class="lha-ci-kicker">LHA Play CI</p>
+      <div class="lha-ci-state-code">404</div>
+      <h1 class="lha-ci-state-title">{{ $t('not_found.not_found') }}</h1>
+      <router-link class="lha-ci-state-link" replace :to="{ name: 'home' }">
+        {{ $t('not_found.back_home') }}
+      </router-link>
+    </section>
+  </main>
 </template>

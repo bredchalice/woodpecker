@@ -1,5 +1,6 @@
 <template>
   <Header
+    class="lha-ci-shell-header"
     :go-back="goBack"
     :enable-tabs="enableTabs"
     :search="search"
@@ -11,8 +12,10 @@
     <template v-if="$slots.tabActions" #tabActions><slot name="tabActions" /></template>
   </Header>
 
-  <slot v-if="fluidContent" />
-  <Container v-else>
+  <div v-if="fluidContent" class="lha-ci-shell-fluid">
+    <slot />
+  </div>
+  <Container v-else class="lha-ci-shell-content">
     <slot />
   </Container>
 </template>
