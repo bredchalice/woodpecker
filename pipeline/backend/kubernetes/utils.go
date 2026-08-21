@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	maxDNSLabelLen                  = 63
+	maxDNSLabelLen                    = 63
 	inClusterServiceAccountTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
@@ -45,7 +45,8 @@ var (
 )
 
 type serviceAccountTokenRetryRoundTripper struct {
-	base http.RoundTripper
+	base      http.RoundTripper
+	tokenFile string
 }
 
 func (r *serviceAccountTokenRetryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -54,7 +55,7 @@ func (r *serviceAccountTokenRetryRoundTripper) RoundTrip(req *http.Request) (*ht
 		return resp, err
 	}
 
-	token, readErr := os.ReadFile(inClusterServiceAccountTokenFile)
+	token, readErr := os.ReadFile(r.tokenFile)
 	if readErr != nil {
 		return resp, err
 	}
@@ -157,7 +158,7 @@ func getClientInsideOfCluster() (kubernetes.Interface, error) {
 		if previousWrap != nil {
 			rt = previousWrap(rt)
 		}
-		return &serviceAccountTokenRetryRoundTripper{base: rt}
+		return &serviceAccountTokenRetryRoundTripper{base: rt, tokenFile: inClusterServiceAccountTokenFile}
 	}
 
 	return kubernetes.NewForConfig(config)
