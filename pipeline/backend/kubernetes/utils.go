@@ -15,9 +15,9 @@
 package kubernetes
 
 import (
+	"errors"
 	"io"
 	"net/http"
-	"errors"
 	"os"
 	"regexp"
 	"strings"
@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	maxDNSLabelLen = 63
+	maxDNSLabelLen                  = 63
 	inClusterServiceAccountTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
@@ -124,6 +124,7 @@ func isInvalidImageName(pod *kube_core_v1.Pod) bool {
 				return true
 			}
 		}
+	}
 
 	return false
 }
