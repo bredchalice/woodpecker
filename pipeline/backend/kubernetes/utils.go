@@ -16,6 +16,8 @@ package kubernetes
 
 import (
 	"errors"
+	"io"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -26,7 +28,10 @@ import (
 	kube_client_cmd "k8s.io/client-go/tools/clientcmd"
 )
 
-const maxDNSLabelLen = 63
+const (
+	maxDNSLabelLen                    = 63
+	inClusterServiceAccountTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+)
 
 var (
 	dnsPattern = regexp.MustCompile(
@@ -38,6 +43,31 @@ var (
 	dnsDisallowedCharacters = regexp.MustCompile(`[^-^.a-z0-9]+`)
 	ErrDNSPatternInvalid    = errors.New("name is not a valid kubernetes DNS name")
 )
+
+type serviceAccountTokenRetryRoundTripper struct {
+	base      http.RoundTripper
+	tokenFile string
+}
+
+func (r *serviceAccountTokenRetryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := r.base.RoundTrip(req)
+	if err != nil || resp.StatusCode != http.StatusUnauthorized || (req.Method != http.MethodGet && req.Method != http.MethodHead) {
+		return resp, err
+	}
+
+	token, readErr := os.ReadFile(r.tokenFile)
+	if readErr != nil {
+		return resp, err
+	}
+
+	_, _ = io.Copy(io.Discard, resp.Body)
+	_ = resp.Body.Close()
+
+	retryReq := req.Clone(req.Context())
+	retryReq.Header = req.Header.Clone()
+	retryReq.Header.Set("Authorization", "Bearer "+strings.TrimSpace(string(token)))
+	return r.base.RoundTrip(retryReq)
+}
 
 func getHostnameOrEmpty(name string) string {
 	clean, _ := toDNSName(name)
@@ -121,6 +151,14 @@ func getClientInsideOfCluster() (kubernetes.Interface, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
+	}
+
+	previousWrap := config.WrapTransport
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		if previousWrap != nil {
+			rt = previousWrap(rt)
+		}
+		return &serviceAccountTokenRetryRoundTripper{base: rt, tokenFile: inClusterServiceAccountTokenFile}
 	}
 
 	return kubernetes.NewForConfig(config)
