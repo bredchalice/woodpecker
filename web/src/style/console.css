@@ -181,16 +181,16 @@
 .dark .ansi-bright-yellow-bg {
   background-color: #854d0e;
 }
-.dark .ansi-bright-blue-bg {
+.dark .ansi-blue-bg {
   background-color: #1d4ed8;
 }
-.dark .ansi-bright-magenta-bg {
+.dark .ansi-magenta-bg {
   background-color: #7e22ce;
 }
-.dark .ansi-bright-cyan-bg {
+.dark .ansi-cyan-bg {
   background-color: #0e7490;
 }
-.dark .ansi-bright-white-bg {
+.dark .ansi-white-bg {
   background-color: #e5e7eb;
 }
 
@@ -201,7 +201,6 @@
   --lha-console-link: #67e8f9;
   --lha-console-muted: #7f8a9d;
   --lha-console-border: rgba(148, 163, 184, 0.14);
-  --lha-console-command-bg: rgba(59, 130, 246, 0.08);
 }
 
 .code-box-log > div:first-child {
@@ -210,13 +209,13 @@
 
 .code-box-log .sticky[class*='col-span-3'] {
   border: 1px solid var(--lha-console-border);
-  background-color: var(--lha-console-command-bg) !important;
+  background-color: transparent !important;
   color: var(--lha-console-command);
   font-weight: 650;
 }
 
 .code-box-log .sticky[class*='col-span-3']:hover {
-  background-color: rgba(59, 130, 246, 0.14) !important;
+  background-color: transparent !important;
 }
 
 .code-box-log a[href^='#L'] {
