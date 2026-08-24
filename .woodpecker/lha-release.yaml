@@ -27,12 +27,15 @@ steps:
         ' docker/Dockerfile.server.fork > docker/Dockerfile.server.fork.tmp
         mv docker/Dockerfile.server.fork.tmp docker/Dockerfile.server.fork
 
-        awk -v release="$RELEASE_TAG" -v sha="$CI_COMMIT_SHA" '
-          { print }
-          $0 == "ARG TARGETOS TARGETARCH CI_COMMIT_SHA LHA_WOODPECKER_VERSION" {
-            print "ARG LHA_WOODPECKER_VERSION=" release
+        awk -v release="$RELEASE_TAG" -v sha="$CI_COMMIT_SHA" -v branch="$CI_COMMIT_BRANCH" '
+          $0 == "ARG TARGETOS TARGETARCH CI_COMMIT_SHA CI_COMMIT_TAG CI_COMMIT_BRANCH" {
+            print "ARG TARGETOS TARGETARCH"
             print "ARG CI_COMMIT_SHA=" sha
+            print "ARG CI_COMMIT_TAG=" release
+            print "ARG CI_COMMIT_BRANCH=" branch
+            next
           }
+          { print }
         ' docker/Dockerfile.agent.alpine.multiarch > docker/Dockerfile.agent.alpine.multiarch.tmp
         mv docker/Dockerfile.agent.alpine.multiarch.tmp docker/Dockerfile.agent.alpine.multiarch
 
