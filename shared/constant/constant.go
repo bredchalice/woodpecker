@@ -27,7 +27,7 @@ var DefaultConfigOrder = []string{
 const (
 	// DefaultClonePlugin can be changed by 'WOODPECKER_DEFAULT_CLONE_PLUGIN' at runtime.
 	// renovate: datasource=docker depName=woodpeckerci/plugin-git
-	DefaultClonePlugin = "docker.io/woodpeckerci/plugin-git:2.10.0"
+	DefaultClonePlugin = "docker.io/woodpeckerci/plugin-git:2.9.2"
 )
 
 // TrustedClonePlugins can be changed by 'WOODPECKER_PLUGINS_TRUSTED_CLONE' at runtime.
@@ -37,5 +37,9 @@ var TrustedClonePlugins = []string{
 	"quay.io/woodpeckerci/plugin-git",
 }
 
-// TaskTimeout is the time till a running task is counted as dead.
-var TaskTimeout = time.Minute
+// TaskTimeout is the grace period after the last successful agent lease refresh
+// before a running task is considered abandoned and returned to the queue.
+// Agents refresh active workflow leases every 15 seconds. Five minutes gives
+// transient gRPC, API-server and control-plane interruptions room to recover
+// without reclaiming a workflow whose build pod is still running.
+var TaskTimeout = 5 * time.Minute

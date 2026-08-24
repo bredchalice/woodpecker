@@ -18,24 +18,32 @@
     </template>
 
     <template #headerActions>
-      <div class="flex w-full items-center justify-between gap-2">
-        <div class="flex min-w-0 content-start gap-2">
+      <div class="flex w-full items-center justify-between gap-3">
+        <div class="lha-ci-pipeline-heading">
           <PipelineStatusIcon :status="pipeline.status" class="flex shrink-0" />
-          <span class="shrink-0 text-center">{{ $t('repo.pipeline.pipeline', { pipelineId }) }}</span>
-          <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-          <span class="hidden md:inline-block">-</span>
-          <RenderMarkdown
-            class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-            :title="message"
-            :content="shortMessage"
-            inline
-          />
+          <div class="min-w-0">
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="shrink-0 font-semibold">#{{ pipelineId }}</span>
+              <span class="lha-ci-status-pill">{{ semanticStatusLabel }}</span>
+              <RenderMarkdown
+                class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+                :title="message"
+                :content="shortMessage"
+                inline
+              />
+            </div>
+            <div class="lha-ci-pipeline-heading__meta">
+              <span>{{ pipeline.branch || pipeline.ref }}</span>
+              <span aria-hidden="true">·</span>
+              <span class="font-mono">{{ pipeline.commit.slice(0, 10) }}</span>
+            </div>
+          </div>
         </div>
 
         <template v-if="repoPermissions!.push && pipeline.status !== 'blocked'">
           <div class="flex content-start gap-x-2">
             <Button
-              v-if="pipeline.status === 'pending' || pipeline.status === 'running'"
+              v-if="pipeline.status === 'pending' || pipeline.status === 'started' || pipeline.status === 'running'"
               class="shrink-0"
               :text="$t('repo.pipeline.actions.cancel')"
               :is-loading="isCancelingPipeline"
@@ -86,13 +94,13 @@
               :to="{ name: 'repo-pipeline', params: { pipelineId: pipeline.cancel_info.superseded_by } }"
               class="hover:underline"
             >
-              {{ $t('repo.pipeline.cancel_info.superseded_by', { pipelineId: pipeline.cancel_info.superseded_by }) }}
+              Replaced by build #{{ pipeline.cancel_info.superseded_by }}
             </router-link>
             <template v-else-if="pipeline.cancel_info.canceled_by_user">
-              {{ $t('repo.pipeline.cancel_info.canceled_by_user', { user: pipeline.cancel_info.canceled_by_user }) }}
+              Cancelled by {{ pipeline.cancel_info.canceled_by_user }}
             </template>
             <template v-else-if="pipeline.cancel_info.canceled_by_step">
-              {{ $t('repo.pipeline.cancel_info.canceled_by_step', { user: pipeline.cancel_info.canceled_by_step }) }}
+              Cancelled by step {{ pipeline.cancel_info.canceled_by_step }}
             </template>
           </span>
         </div>
@@ -101,12 +109,12 @@
 
     <Tab icon="tray-full" :to="{ name: 'repo-pipeline' }" :title="$t('repo.pipeline.tasks')" />
     <Tab
-      v-if="errorsTabCount > 0"
+      v-if="pipeline.errors && pipeline.errors.length > 0"
       :to="{ name: 'repo-pipeline-errors' }"
       icon="alert"
-      :title="pipelineHasErrorsToShow(pipeline) ? $t('repo.pipeline.errors') : $t('repo.pipeline.warnings')"
-      :count="errorsTabCount"
-      :icon-class="pipelineHasErrorsToShow(pipeline) ? 'text-wp-error-100' : 'text-wp-state-warn-100'"
+      :title="pipeline.errors.some((e) => !e.is_warning) ? $t('repo.pipeline.errors') : $t('repo.pipeline.warnings')"
+      :count="pipeline.errors?.length"
+      :icon-class="pipeline.errors.some((e) => !e.is_warning) ? 'text-wp-error-100' : 'text-wp-state-warn-100'"
     />
     <Tab icon="file-cog-outline" :to="{ name: 'repo-pipeline-config' }" :title="$t('repo.pipeline.config')" />
     <Tab
@@ -128,7 +136,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, toRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue';
 import type { Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -149,7 +157,6 @@ import useNotifications from '~/compositions/useNotifications';
 import usePipeline from '~/compositions/usePipeline';
 import { useRouteBack } from '~/compositions/useRouteBack';
 import type { Pipeline, PipelineConfig } from '~/lib/api/types';
-import { pipelineHasErrorsToShow, workflowsWithErrors } from '~/lib/pipeline';
 import { usePipelineStore } from '~/store/pipelines';
 
 const props = defineProps<{
@@ -174,11 +181,18 @@ const repoPermissions = requiredInject('repo-permissions');
 
 const pipeline = pipelineStore.getPipeline(repositoryId, pipelineId);
 const { since, duration, durationElapsed, created, message, shortMessage } = usePipeline(pipeline);
+provide('pipeline', pipeline as Ref<Pipeline>);
 
-const errorsTabCount = computed(
-  () => (pipeline.value?.errors?.length ?? 0) + workflowsWithErrors(pipeline.value).length,
-);
-provide('pipeline', pipeline as Ref<Pipeline>); // can't be undefined because of v-if in template
+const semanticStatusLabel = computed(() => {
+  if (!pipeline.value) return '';
+  if (pipeline.value.status === 'killed' && pipeline.value.cancel_info?.superseded_by) return 'Superseded';
+  if (pipeline.value.status === 'killed' || pipeline.value.status === 'canceled') return 'Cancelled';
+  if (pipeline.value.status === 'success') return 'Passed';
+  if (pipeline.value.status === 'failure' || pipeline.value.status === 'error') return 'Failed';
+  if (pipeline.value.status === 'started' || pipeline.value.status === 'running') return 'Running';
+  if (pipeline.value.status === 'pending') return 'Queued';
+  return pipeline.value.status;
+});
 
 const pipelineConfigs = ref<PipelineConfig[]>();
 provide('pipeline-configs', pipelineConfigs);
@@ -225,6 +239,38 @@ const { doSubmit: restartPipeline, isLoading: isRestartingPipeline } = useAsyncA
 
 onMounted(loadPipeline);
 watch([repositoryId, pipelineId], loadPipeline);
+onBeforeUnmount(() => {
+  favicon.updateStatus('default');
+});
 
 const goBack = useRouteBack({ name: 'repo' });
 </script>
+
+<style scoped>
+.lha-ci-pipeline-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.lha-ci-pipeline-heading__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+  color: var(--wp-text-alt-100);
+  font-size: 0.75rem;
+}
+
+.lha-ci-status-pill {
+  flex-shrink: 0;
+  padding: 0.16rem 0.45rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 999px;
+  background: var(--lha-ci-surface-muted);
+  color: var(--wp-text-200);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+</style>

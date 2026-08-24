@@ -27,18 +27,15 @@ const (
 
 // ParseBytes parses the configuration from bytes b.
 func ParseBytes(b []byte) (*types.Workflow, error) {
+	parser := xyaml.NewParser(xyaml.WithDepth(maxMergeDepth))
 	out := new(types.Workflow)
-	err := Unmarshal(b, out)
-	if err != nil {
+	if err := parser.Unmarshal(b, out); err != nil {
+		return nil, err
+	}
+	if err := out.Manual.NormalizeAndValidate(); err != nil {
 		return nil, err
 	}
 	return out, nil
-}
-
-// Unmarshal resolves YAML sequence merges with Woodpecker's supported maximum
-// nesting depth before unmarshalling into out.
-func Unmarshal(b []byte, out any) error {
-	return xyaml.NewParser(xyaml.WithDepth(maxMergeDepth)).Unmarshal(b, out)
 }
 
 // ParseString parses the configuration from string s.

@@ -1,18 +1,34 @@
 <template>
   <template v-if="repoPermissions && repoPermissions.push">
-    <Panel>
-      <InputField :label="$t('repo.pipeline.debug.metadata_exec_title')">
-        <p class="text-wp-text-alt-100 mb-2 text-sm">{{ $t('repo.pipeline.debug.metadata_exec_desc') }}</p>
-        <pre class="code-box">{{ cliExecWithMetadata }}</pre>
-      </InputField>
-      <div class="flex items-center space-x-4">
-        <Button :is-loading="isLoading" :text="$t('repo.pipeline.debug.download_metadata')" @click="downloadMetadata" />
-      </div>
-      <InputField v-if="pipeline.version" :label="$t('repo.pipeline.version_header')" class="pt-4">
-        <p class="text-wp-text-alt-100 mb-2 text-sm">{{ $t('repo.pipeline.version') }}</p>
-        <pre class="code-box">{{ pipeline.version }}</pre>
-      </InputField>
-    </Panel>
+    <div>
+      <header class="lha-ci-workspace-head">
+        <div class="lha-ci-workspace-head__copy">
+          <p class="lha-ci-kicker">Reproduce and inspect</p>
+          <h2 class="lha-ci-workspace-head__title">Pipeline debug</h2>
+          <p class="lha-ci-workspace-head__text">Export the exact build metadata or reproduce build #{{ pipeline.number }} locally with the Woodpecker CLI.</p>
+        </div>
+        <div class="lha-ci-workspace-head__context">
+          <span>Build</span>
+          <strong>#{{ pipeline.number }}</strong>
+        </div>
+      </header>
+
+      <Panel class="lha-ci-workspace-card">
+        <div class="lha-ci-workspace-list">
+          <InputField :label="$t('repo.pipeline.debug.metadata_exec_title')">
+            <p class="text-wp-text-alt-100 mb-2 text-sm">{{ $t('repo.pipeline.debug.metadata_exec_desc') }}</p>
+            <pre class="code-box">{{ cliExecWithMetadata }}</pre>
+          </InputField>
+          <div class="flex items-center space-x-4">
+            <Button :is-loading="isLoading" :text="$t('repo.pipeline.debug.download_metadata')" @click="downloadMetadata" />
+          </div>
+          <InputField v-if="pipeline.version" :label="$t('repo.pipeline.version_header')" class="pt-4">
+            <p class="text-wp-text-alt-100 mb-2 text-sm">{{ $t('repo.pipeline.version') }}</p>
+            <pre class="code-box">{{ pipeline.version }}</pre>
+          </InputField>
+        </div>
+      </Panel>
+    </div>
   </template>
   <div v-else class="flex h-full items-center justify-center">
     <div class="bg-wp-error-100 dark:bg-wp-error-200 rounded-lg p-8 text-center shadow-lg">
@@ -44,12 +60,12 @@ const repoPermissions = requiredInject('repo-permissions');
 const isLoading = ref(false);
 
 const metadataFileName = computed(
-  () => `${repo?.value.full_name.replaceAll('/', '-')}-pipeline-${pipeline?.value.number}-metadata.json`,
+  () => `${repo.value.full_name.replaceAll('/', '-')}-pipeline-${pipeline.value.number}-metadata.json`,
 );
 const cliExecWithMetadata = computed(() => `# woodpecker-cli exec --metadata-file ${metadataFileName.value}`);
 
 async function downloadMetadata() {
-  if (!repo?.value || !pipeline?.value || !repoPermissions?.value?.push) {
+  if (!repo.value || !pipeline.value || !repoPermissions.value?.push) {
     notifications.notify({ type: 'error', title: t('repo.pipeline.debug.metadata_download_error') });
     return;
   }
@@ -57,11 +73,7 @@ async function downloadMetadata() {
   isLoading.value = true;
   try {
     const metadata = await apiClient.getPipelineMetadata(repo.value.id, pipeline.value.number);
-
-    // Create a Blob with the JSON data
     const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
-
-    // Create a download link and trigger the download
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

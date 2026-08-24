@@ -1,35 +1,43 @@
 <template>
-  <div class="m-auto flex flex-col gap-4">
-    <div class="text-wp-text-100 text-center">
-      <WoodpeckerLogo preserveAspectRatio="xMinYMin slice" class="m-auto mb-8 w-32" />
-      <template v-if="state === 'confirm'">
-        <h1 class="text-4xl font-bold">{{ $t('login_to_cli') }}</h1>
-        <p class="text-2xl">{{ $t('login_to_cli_description') }}</p>
-      </template>
-      <template v-else-if="state === 'success'">
-        <h1 class="text-4xl font-bold">{{ $t('cli_login_success') }}</h1>
-        <p class="text-2xl">{{ $t('return_to_cli') }}</p>
-      </template>
-      <template v-else-if="state === 'failed'">
-        <h1 class="mt-4 text-4xl font-bold">{{ $t('cli_login_failed') }}</h1>
-        <p class="text-2xl">{{ $t('return_to_cli') }}</p>
-      </template>
-      <template v-else-if="state === 'denied'">
-        <h1 class="mt-4 text-4xl font-bold">{{ $t('cli_login_denied') }}</h1>
-        <p class="text-2xl">{{ $t('return_to_cli') }}</p>
-      </template>
-    </div>
+  <main class="lha-ci-state-page">
+    <section class="lha-ci-state-card lha-ci-cli-auth">
+      <div class="lha-ci-cli-auth__mark">
+        <WoodpeckerLogo class="h-12 w-12" />
+      </div>
+      <p class="lha-ci-kicker">LHA Play CI</p>
 
-    <div v-if="state === 'confirm'" class="flex justify-center gap-4">
-      <Button :text="$t('login_to_cli')" color="green" @click="sendToken(false)" />
-      <Button :text="$t('abort')" color="red" @click="abortLogin" />
-    </div>
-  </div>
+      <template v-if="state === 'confirm'">
+        <h1 class="lha-ci-state-title">{{ $t('login_to_cli') }}</h1>
+        <p class="lha-ci-state-copy">{{ $t('login_to_cli_description') }}</p>
+        <div class="lha-ci-cli-auth__actions">
+          <Button :text="$t('login_to_cli')" color="green" :is-loading="isSubmitting" @click="sendToken(false)" />
+          <Button :text="$t('abort')" color="red" :disabled="isSubmitting" @click="abortLogin" />
+        </div>
+      </template>
+
+      <template v-else-if="state === 'success'">
+        <div class="lha-ci-state-code">OK</div>
+        <h1 class="lha-ci-state-title">{{ $t('cli_login_success') }}</h1>
+        <p class="lha-ci-state-copy">{{ $t('return_to_cli') }}</p>
+      </template>
+
+      <template v-else-if="state === 'failed'">
+        <div class="lha-ci-state-code">!</div>
+        <h1 class="lha-ci-state-title">{{ $t('cli_login_failed') }}</h1>
+        <p class="lha-ci-state-copy">{{ $t('return_to_cli') }}</p>
+      </template>
+
+      <template v-else-if="state === 'denied'">
+        <div class="lha-ci-state-code">×</div>
+        <h1 class="lha-ci-state-title">{{ $t('cli_login_denied') }}</h1>
+        <p class="lha-ci-state-copy">{{ $t('return_to_cli') }}</p>
+      </template>
+    </section>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
 import WoodpeckerLogo from '~/assets/logo.svg?component';
@@ -38,40 +46,40 @@ import useApiClient from '~/compositions/useApiClient';
 
 const apiClient = useApiClient();
 const route = useRoute();
-const { t } = useI18n();
 const state = ref<'confirm' | 'success' | 'failed' | 'denied'>('confirm');
+const isSubmitting = ref(false);
 
 async function sendToken(abort = false) {
   const port = route.query.port as string;
   if (!port) {
-    throw new Error('Unexpected: port not found');
-  }
-
-  const address = `http://localhost:${port}`;
-
-  const token = abort ? '' : await apiClient.getToken();
-
-  const resp = await fetch(`${address}/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token }),
-  });
-
-  if (abort) {
-    state.value = 'denied';
-    window.close();
+    state.value = 'failed';
     return;
   }
 
-  const data = (await resp.json()) as { ok: string };
-  if (data.ok === 'true') {
-    state.value = 'success';
-  } else {
-    state.value = 'failed';
-    // eslint-disable-next-line no-alert
-    alert(t('cli_login_failed'));
+  isSubmitting.value = true;
+  try {
+    const address = `http://localhost:${port}`;
+    const token = abort ? '' : await apiClient.getToken();
+    const response = await fetch(`${address}/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    if (abort) {
+      state.value = 'denied';
+      window.close();
+      return;
+    }
+
+    const data = (await response.json()) as { ok: string };
+    state.value = data.ok === 'true' ? 'success' : 'failed';
+  } catch {
+    state.value = abort ? 'denied' : 'failed';
+  } finally {
+    isSubmitting.value = false;
   }
 }
 

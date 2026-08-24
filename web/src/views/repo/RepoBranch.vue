@@ -1,8 +1,18 @@
 <template>
-  <div class="mb-4 flex w-full justify-center">
-    <span class="text-wp-text-100 text-xl">{{ $t('repo.pipeline.pipelines_for', { branch }) }}</span>
+  <div class="flex flex-col gap-4">
+    <div class="lha-ci-shell-intro">
+      <div class="lha-ci-shell-intro__copy">
+        <p class="lha-ci-kicker">Branch activity</p>
+        <h2 class="lha-ci-shell-intro__title">{{ branch }}</h2>
+        <p class="lha-ci-shell-intro__text">Pipeline history for this source branch, excluding pull-request validation runs.</p>
+      </div>
+      <div class="lha-ci-shell-intro__context">
+        <span>Runs loaded</span>
+        <strong>{{ pipelines.length }}</strong>
+      </div>
+    </div>
+    <PipelineList :pipelines="pipelines" :repo="repo" />
   </div>
-  <PipelineList :pipelines="pipelines" :repo="repo" />
 </template>
 
 <script lang="ts" setup>
@@ -13,21 +23,13 @@ import PipelineList from '~/components/repo/pipeline/PipelineList.vue';
 import { requiredInject } from '~/compositions/useInjectProvide';
 import { useWPTitle } from '~/compositions/useWPTitle';
 
-const props = defineProps<{
-  branch: string;
-}>();
-
+const props = defineProps<{ branch: string }>();
 const branch = toRef(props, 'branch');
 const repo = requiredInject('repo');
-
 const allPipelines = requiredInject('pipelines');
 const pipelines = computed(() =>
   allPipelines.value.filter(
-    (b) =>
-      b.branch === branch.value &&
-      b.event !== 'pull_request' &&
-      b.event !== 'pull_request_closed' &&
-      b.event !== 'pull_request_metadata',
+    (b) => b.branch === branch.value && b.event !== 'pull_request' && b.event !== 'pull_request_closed' && b.event !== 'pull_request_metadata',
   ),
 );
 

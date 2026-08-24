@@ -1,5 +1,6 @@
 <template>
   <Header
+    class="lha-ci-shell-header"
     :go-back="goBack"
     :enable-tabs="enableTabs"
     :search="search"
@@ -12,7 +13,7 @@
   </Header>
 
   <slot v-if="fluidContent" />
-  <Container v-else>
+  <Container v-else class="lha-ci-shell-content">
     <slot />
   </Container>
 </template>

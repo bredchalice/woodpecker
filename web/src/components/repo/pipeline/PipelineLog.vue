@@ -17,9 +17,15 @@
       <div
         class="bg-wp-code-100 fixed top-0 left-0 flex w-full flex-row items-center px-4 py-2 md:relative md:top-auto md:left-auto"
       >
-        <span class="text-wp-code-text-alt-100 text-base font-bold">
+        <span class="text-wp-code-text-alt-100 flex min-w-0 items-center gap-2 text-base font-bold">
           <span class="md:display-unset hidden">{{ $t('repo.pipeline.log_title') }}</span>
           <span class="md:hidden">{{ step?.name }}</span>
+          <span v-if="semanticErrorCount > 0" class="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">
+            {{ semanticErrorCount }} error{{ semanticErrorCount === 1 ? '' : 's' }}
+          </span>
+          <span v-if="semanticWarningCount > 0" class="rounded-full bg-yellow-500/15 px-2 py-0.5 text-xs text-yellow-300">
+            {{ semanticWarningCount }} warning{{ semanticWarningCount === 1 ? '' : 's' }}
+          </span>
         </span>
 
         <div class="ml-auto flex flex-row items-center gap-x-2">
@@ -31,10 +37,11 @@
           />
           <IconButton
             v-if="step?.finished !== undefined && hasLogs"
+            :is-loading="downloadInProgress"
             :title="$t('repo.pipeline.actions.log_download')"
             class="hover:bg-white/10!"
             icon="download"
-            :href="logDownloadUrl"
+            @click="download"
           />
           <IconButton
             v-if="step?.finished !== undefined && hasLogs && hasPushPermission"
@@ -80,7 +87,11 @@
           <div
             v-if="group.isActualCommand"
             class="sticky -top-4 z-10 col-span-3 my-1 flex cursor-pointer items-center rounded-sm px-2 py-1 font-mono text-sm shadow-xs"
-            :class="[group.command && isSelected(group.command) ? 'bg-blue-900' : 'bg-wp-code-100']"
+            :class="[
+              group.command && isSelected(group.command)
+                ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-400/20'
+                : 'bg-wp-code-100',
+            ]"
             @click="toggleGroup(group.id)"
           >
             <Icon
@@ -109,7 +120,7 @@
                 :class="{
                   'bg-red-600/40 dark:bg-red-800/50': line.type === 'error',
                   'bg-yellow-600/40 dark:bg-yellow-800/50': line.type === 'warning',
-                  'bg-blue-600/30': isSelected(line),
+                  'bg-blue-500/10': isSelected(line),
                   underline: isSelected(line),
                 }"
               >
@@ -121,7 +132,7 @@
                 :class="{
                   'bg-red-600/40 dark:bg-red-800/50': line.type === 'error',
                   'bg-yellow-600/40 dark:bg-yellow-800/50': line.type === 'warning',
-                  'bg-blue-600/30': isSelected(line),
+                  'bg-blue-500/10': isSelected(line),
                 }"
                 v-html="line.text"
               />
@@ -131,7 +142,7 @@
                 :class="{
                   'bg-red-600/40 dark:bg-red-800/50': line.type === 'error',
                   'bg-yellow-600/40 dark:bg-yellow-800/50': line.type === 'warning',
-                  'bg-blue-600/30': isSelected(line),
+                  'bg-blue-500/10': isSelected(line),
                 }"
               >
                 {{ formatTime(line.time) }}
@@ -151,11 +162,16 @@
 
       <div
         v-if="step?.finished !== undefined"
-        class="text-md bg-wp-code-100 text-wp-code-text-alt-100 flex w-full items-center p-4 font-bold"
+        class="text-md bg-wp-code-100 text-wp-code-text-alt-100 flex w-full items-start gap-2 p-4 font-bold"
       >
-        <PipelineStatusIcon :status="step.state" class="h-4! w-4!" />
-        <span v-if="step?.error" class="px-2">{{ step.error }}</span>
-        <span v-else class="px-2">{{ $t('repo.pipeline.exit_code', { exitCode: step.exit_code }) }}</span>
+        <PipelineStatusIcon :status="step.state" class="mt-0.5 h-4! w-4! shrink-0" />
+        <div class="min-w-0">
+          <div v-if="step?.error">{{ step.error }}</div>
+          <div v-else>{{ $t('repo.pipeline.exit_code', { exitCode: step.exit_code }) }}</div>
+          <div v-if="stepFailed && failureHint" class="mt-1 font-mono text-xs font-normal text-red-300">
+            {{ failureHint }}
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -180,6 +196,7 @@ import { requiredInject } from '~/compositions/useInjectProvide';
 import useNotifications from '~/compositions/useNotifications';
 import useUserConfig from '~/compositions/useUserConfig';
 import type { Pipeline, PipelineConfig, PipelineStep, PipelineWorkflow } from '~/lib/api/types';
+import { classifyLogLine, stripLogAnsi } from '~/lib/logSeverity';
 import { debounce } from '~/lib/utils';
 
 interface LogLine {
@@ -218,8 +235,6 @@ const pipelineConfigs = requiredInject('pipeline-configs');
 const apiClient = useApiClient();
 const route = useRoute();
 
-const config = useConfig();
-
 const loadedStepSlug = ref<string>();
 const stepSlug = computed(() => `${repo?.value.owner} - ${repo?.value.name} - ${pipeline.value.id} - ${stepId.value}`);
 const step = computed(() => pipeline.value && findStep(pipeline.value.workflows || [], stepId.value));
@@ -227,30 +242,36 @@ const stream = ref<EventSource>();
 const log = ref<LogLine[]>();
 const consoleElement = ref<Element>();
 const fullscreen = ref(false);
-const logDownloadUrl = computed(
-  () => `${config.rootPath}/api/repos/${repo.value.id}/logs/${pipeline.value.number}/${step.value?.id}/download`,
-);
 
 const loadedLogs = computed(() => !!log.value);
 const hasLogs = computed(
   () =>
-    // we do not have logs for skipped/canceled steps
     repo?.value && pipeline.value && step.value && step.value.state !== 'skipped' && step.value.state !== 'canceled',
 );
 const autoScroll = useStorage('woodpecker:log-auto-scroll', true);
 const showActions = ref(false);
+const downloadInProgress = ref(false);
 const ansiUp = ref(new AnsiUp());
 ansiUp.value.use_classes = true;
 const logBuffer = ref<LogLine[]>([]);
 
-const maxLineCount = config.maxPipelineLogLineCount; // TODO(2653): implement lazy-loading support
+const config = useConfig();
+const maxLineCount = config.maxPipelineLogLineCount;
 const hasPushPermission = computed(() => repoPermissions?.value?.push);
 
 const collapsedCommands = ref(new Set<number>());
-
 const commandRegex = /^\s*-\s(.+)$/gm;
 const specialCharsRegex = /[.*+?^${}()|[\]\\]/g;
 const matrixVariableRegex = /\\\$(\\\{\w+\\\})/g;
+
+const stepFailed = computed(() => step.value?.state === 'failure' || step.value?.state === 'error');
+const semanticErrorCount = computed(() => log.value?.filter((line) => line.type === 'error').length ?? 0);
+const semanticWarningCount = computed(() => log.value?.filter((line) => line.type === 'warning').length ?? 0);
+const failureHint = computed(() => {
+  if (!stepFailed.value) return '';
+  const errorLine = [...(log.value ?? [])].reverse().find((line) => line.type === 'error');
+  return errorLine?.rawText ? stripLogAnsi(errorLine.rawText).trim() : '';
+});
 
 const knownCommandMatchers = computed(() => {
   if (!pipelineConfigs.value) return [];
@@ -260,10 +281,9 @@ const knownCommandMatchers = computed(() => {
     const matches = decoded.matchAll(commandRegex);
     for (const match of matches) {
       const rawCommand = match[1].trim();
-      // Replace matrix variable ${VAR} with a wildcard match (non-greedy)
       const patternString = rawCommand
-        .replace(specialCharsRegex, '\\$&') // escape all
-        .replace(matrixVariableRegex, '.*'); // match ${VAR}
+        .replace(specialCharsRegex, '\\$&')
+        .replace(matrixVariableRegex, '.*');
 
       patterns.push(new RegExp(`^${patternString}$`));
     }
@@ -322,17 +342,11 @@ const groupedLogs = computed(() => {
   return blocks;
 });
 
-const hasGroupedLogs = computed(() => {
-  return groupedLogs.value.find((g) => g.isActualCommand);
-});
-
+const hasGroupedLogs = computed(() => groupedLogs.value.find((group) => group.isActualCommand));
 const urlRegex = /https?:\/\/\S+/g;
 
 function isScrolledToBottom(): boolean {
-  if (!consoleElement.value) {
-    return false;
-  }
-  // we use 5 as threshold
+  if (!consoleElement.value) return false;
   return consoleElement.value.scrollHeight - consoleElement.value.scrollTop - consoleElement.value.clientHeight < 5;
 }
 
@@ -345,11 +359,8 @@ function formatTime(time?: number): string {
 }
 
 function toggleGroup(id: number) {
-  if (collapsedCommands.value.has(id)) {
-    collapsedCommands.value.delete(id);
-  } else {
-    collapsedCommands.value.add(id);
-  }
+  if (collapsedCommands.value.has(id)) collapsedCommands.value.delete(id);
+  else collapsedCommands.value.add(id);
 }
 
 function expandAll() {
@@ -359,9 +370,7 @@ function expandAll() {
 function collapseAll() {
   const newSet = new Set<number>();
   groupedLogs.value.forEach((group) => {
-    if (group.isActualCommand) {
-      newSet.add(group.id);
-    }
+    if (group.isActualCommand) newSet.add(group.id);
   });
   collapsedCommands.value = newSet;
 }
@@ -383,16 +392,13 @@ function writeLog(line: Partial<LogLine>) {
     text: processText(line.text ?? ''),
     rawText,
     time: line.time ?? 0,
-    type: null, // TODO: implement way to detect errors and warnings
+    type: classifyLogLine(rawText),
   });
 }
 
 function scrollDown() {
   nextTick(() => {
-    if (!consoleElement.value) {
-      return;
-    }
-    consoleElement.value.scrollTop = consoleElement.value.scrollHeight;
+    if (consoleElement.value) consoleElement.value.scrollTop = consoleElement.value.scrollHeight;
   });
 }
 
@@ -401,18 +407,14 @@ const flushLogs = debounce((scroll: boolean) => {
   logBuffer.value = [];
 
   if (buffer.length === 0) {
-    if (!log.value) {
-      log.value = [];
-    }
+    if (!log.value) log.value = [];
     return;
   }
 
-  // append old logs lines
   if (buffer.length < maxLineCount && log.value) {
     buffer = [...log.value.slice(-(maxLineCount - buffer.length)), ...buffer];
   }
 
-  // deduplicate repeating times
   buffer = buffer.reduce(
     (acc, line) => ({
       lastTime: line.time ?? 0,
@@ -436,10 +438,41 @@ const flushLogs = debounce((scroll: boolean) => {
   }
 }, 500);
 
-async function loadLogs() {
-  if (loadedStepSlug.value === stepSlug.value) {
-    return;
+async function download() {
+  if (!repo?.value || !pipeline.value || !step.value) {
+    throw new Error('The repository, pipeline or step was undefined');
   }
+  let logs;
+  try {
+    downloadInProgress.value = true;
+    logs = await apiClient.getLogs(repo.value.id, pipeline.value.number, step.value.id);
+  } catch (e) {
+    notifications.notifyError(e as Error, i18n.t('repo.pipeline.log_download_error'));
+    return;
+  } finally {
+    downloadInProgress.value = false;
+  }
+  const fileURL = window.URL.createObjectURL(
+    new Blob([logs.map((line) => decode(line.data ?? '')).join('\n')], {
+      type: 'text/plain',
+    }),
+  );
+  const fileLink = document.createElement('a');
+
+  fileLink.href = fileURL;
+  fileLink.setAttribute(
+    'download',
+    `${repo.value.owner}-${repo.value.name}-${pipeline.value.number}-${step.value.name}.log`,
+  );
+  document.body.appendChild(fileLink);
+
+  fileLink.click();
+  document.body.removeChild(fileLink);
+  window.URL.revokeObjectURL(fileURL);
+}
+
+async function loadLogs() {
+  if (loadedStepSlug.value === stepSlug.value) return;
 
   log.value = undefined;
   logBuffer.value = [];
@@ -448,9 +481,7 @@ async function loadLogs() {
 
   stream.value?.close();
 
-  if (!hasLogs.value || !step.value) {
-    return;
-  }
+  if (!hasLogs.value || !step.value) return;
 
   if (step.value.state !== 'running' && step.value.state !== 'pending') {
     loadedStepSlug.value = stepSlug.value;
@@ -473,9 +504,7 @@ async function deleteLogs() {
 
   // TODO: use proper dialog (copy-pasted from web/src/components/secrets/SecretList.vue:deleteSecret)
   // eslint-disable-next-line no-alert
-  if (!confirm(i18n.t('repo.pipeline.log_delete_confirm'))) {
-    return;
-  }
+  if (!confirm(i18n.t('repo.pipeline.log_delete_confirm'))) return;
 
   try {
     await apiClient.deleteLogs(repo.value.id, pipeline.value.number, step.value.id);
@@ -489,19 +518,13 @@ function findStep(workflows: PipelineWorkflow[], pid: number): PipelineStep | un
   return workflows.reduce(
     (prev, workflow) => {
       const result = workflow.children.reduce(
-        (prevChild, step) => {
-          if (step.pid === pid) {
-            return step;
-          }
-
+        (prevChild, pipelineStep) => {
+          if (pipelineStep.pid === pid) return pipelineStep;
           return prevChild;
         },
         undefined as PipelineStep | undefined,
       );
-      if (result) {
-        return result;
-      }
-
+      if (result) return result;
       return prev;
     },
     undefined as PipelineStep | undefined,
@@ -535,30 +558,41 @@ watch(step, async (newStep, oldStep) => {
 const expandLogGroupWithPageHash = (hash: string) => {
   if (hash.startsWith('#L')) {
     const lineNum = Number.parseInt(hash.substring(2));
-    const parentGroup = groupedLogs.value.find((g) => lineNum === g.id || g.lines.some((l) => l.number === lineNum));
+    const parentGroup = groupedLogs.value.find((group) =>
+      lineNum === group.id || group.lines.some((line) => line.number === lineNum),
+    );
     if (parentGroup && collapsedCommands.value.has(parentGroup.id)) {
       collapsedCommands.value.delete(parentGroup.id);
     }
   }
 };
 
-// When a user opens a step that has already finished running, collapse all log
-// groups by default so they see only the command outline. This is opt-out via
-// the "collapse log groups by default" user preference.
+const expandFirstSemanticError = async () => {
+  if (!stepFailed.value || route.hash) return;
+  const errorLine = log.value?.find((line) => line.type === 'error');
+  if (!errorLine) return;
+
+  const parentGroup = groupedLogs.value.find(
+    (group) => errorLine.number === group.id || group.lines.some((line) => line.number === errorLine.number),
+  );
+  if (parentGroup) collapsedCommands.value.delete(parentGroup.id);
+
+  await nextTick();
+  document.getElementById(`L${errorLine.number}`)?.scrollIntoView({ block: 'center' });
+};
+
 watch(loadedLogs, async (isLoaded, wasLoaded) => {
-  // Only trigger when transitioning from unloaded to loaded state
-  if (isLoaded && !wasLoaded && userConfig.value.collapseLogGroupsByDefault) {
+  if (isLoaded && !wasLoaded) {
     const isFinished = step.value && !['running', 'pending', 'started'].includes(step.value.state);
-    if (isFinished) {
-      // Wait for groupedLogs computed property to update
+    if (userConfig.value.collapseLogGroupsByDefault && isFinished) {
       await nextTick();
       collapseAll();
       expandLogGroupWithPageHash(route.hash);
     }
+    await expandFirstSemanticError();
   }
 });
 
-// If route hash contain line that is in a collapsed log group, expand it
 watch(
   () => route.hash,
   (newHash) => {

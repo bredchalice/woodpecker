@@ -1,8 +1,6 @@
 <template>
   <Scaffold enable-tabs>
-    <template #title>
-      {{ $t('admin.settings.settings') }}
-    </template>
+    <template #title>{{ $t('admin.settings.settings') }}</template>
     <Tab icon="info" :to="{ name: 'admin-settings' }" :title="$t('info')" />
     <Tab icon="secret" :to="{ name: 'admin-settings-secrets' }" :title="$t('secrets.secrets')" />
     <Tab icon="docker" :to="{ name: 'admin-settings-registries' }" :title="$t('registries.registries')" />
@@ -12,6 +10,18 @@
     <Tab icon="agent" :to="{ name: 'admin-settings-agents' }" :title="$t('admin.settings.agents.agents')" />
     <Tab icon="tray-full" :to="{ name: 'admin-settings-queue' }" :title="$t('admin.settings.queue.queue')" />
     <Tab icon="forge" :to="{ name: 'admin-settings-forges' }" :title="$t('forges')" />
+
+    <div class="lha-ci-shell-intro">
+      <div class="lha-ci-shell-intro__copy">
+        <p class="lha-ci-kicker">Control plane</p>
+        <h2 class="lha-ci-shell-intro__title">LHA Play CI administration</h2>
+        <p class="lha-ci-shell-intro__text">Manage shared credentials, repositories, users, organizations, agents, queue capacity and forge integrations from one operational surface.</p>
+      </div>
+      <div class="lha-ci-shell-intro__context">
+        <span>Scope</span>
+        <strong>Instance-wide</strong>
+      </div>
+    </div>
 
     <router-view />
   </Scaffold>

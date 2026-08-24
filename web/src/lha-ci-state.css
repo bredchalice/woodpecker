@@ -1,0 +1,78 @@
+.lha-ci-state-page {
+  display: flex;
+  min-height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at 20% 15%, var(--lha-ci-accent-soft), transparent 28%),
+    var(--wp-background-200);
+}
+
+.lha-ci-state-card {
+  display: flex;
+  width: min(32rem, 100%);
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem;
+  border: 1px solid var(--lha-ci-border);
+  border-radius: 1.25rem;
+  background: var(--lha-ci-surface);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.lha-ci-state-code {
+  margin: 0.4rem 0 1rem;
+  color: var(--lha-ci-accent);
+  font-size: 3rem;
+  font-weight: 850;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.lha-ci-state-title {
+  margin: 0;
+  color: var(--wp-text-200);
+  font-size: 1.55rem;
+  font-weight: 780;
+  letter-spacing: -0.025em;
+}
+
+.lha-ci-state-copy {
+  max-width: 26rem;
+  margin: 0.7rem 0 0;
+  color: var(--wp-text-alt-100);
+  line-height: 1.55;
+}
+
+.lha-ci-state-link {
+  margin-top: 1.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.65rem;
+  background: var(--lha-ci-accent-soft);
+  color: var(--lha-ci-accent);
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.lha-ci-cli-auth__mark {
+  display: flex;
+  width: 5rem;
+  height: 5rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--lha-ci-accent) 30%, var(--lha-ci-border));
+  border-radius: 1rem;
+  background: var(--lha-ci-accent-soft);
+}
+
+.lha-ci-cli-auth__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}

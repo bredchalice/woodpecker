@@ -22,6 +22,7 @@ type (
 	// Workflow defines a workflow configuration.
 	Workflow struct {
 		When        constraint.When      `yaml:"when,omitempty"`
+		Manual      Manual               `yaml:"manual,omitempty"`
 		Workspace   Workspace            `yaml:"workspace,omitempty"`
 		Clone       ContainerList        `yaml:"clone,omitempty"`
 		Steps       ContainerList        `yaml:"steps,omitempty"`

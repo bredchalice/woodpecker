@@ -1,12 +1,26 @@
 <template>
-  <AgentManager
-    :description="$t('admin.settings.agents.desc')"
-    :load-agents="loadAgents"
-    :create-agent="createAgent"
-    :update-agent="updateAgent"
-    :delete-agent="deleteAgent"
-    :is-admin="true"
-  />
+  <div class="flex flex-col gap-4">
+    <div class="lha-ci-shell-intro">
+      <div class="lha-ci-shell-intro__copy">
+        <p class="lha-ci-kicker">Execution capacity</p>
+        <h2 class="lha-ci-shell-intro__title">Build agents</h2>
+        <p class="lha-ci-shell-intro__text">Manage the workers that execute LHA Play CI jobs. Labels determine which workloads each agent can accept.</p>
+      </div>
+      <div class="lha-ci-shell-intro__context">
+        <span>Scope</span>
+        <strong>Instance agents</strong>
+      </div>
+    </div>
+
+    <AgentManager
+      :description="$t('admin.settings.agents.desc')"
+      :load-agents="loadAgents"
+      :create-agent="createAgent"
+      :update-agent="updateAgent"
+      :delete-agent="deleteAgent"
+      :is-admin="true"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -19,7 +33,6 @@ import { useWPTitle } from '~/compositions/useWPTitle';
 import type { Agent } from '~/lib/api/types';
 
 const apiClient = useApiClient();
-
 const loadAgents = (page: number) => apiClient.getAgents({ page });
 const createAgent = (agent: Partial<Agent>) => apiClient.createAgent(agent);
 const updateAgent = (agent: Agent) => apiClient.updateAgent(agent);

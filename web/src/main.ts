@@ -1,6 +1,9 @@
 import '~/compositions/useFavicon';
 import '~/tailwind.css';
 import '~/style.css';
+import '~/lha-ci.css';
+import '~/lha-ci-shell.css';
+import '~/lha-ci-state.css';
 
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';

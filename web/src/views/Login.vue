@@ -1,6 +1,6 @@
 <template>
-  <main class="flex h-full w-full flex-col items-center justify-center">
-    <Error v-if="errorMessage" class="w-full md:w-3xl">
+  <main class="lha-ci-login">
+    <Error v-if="errorMessage" class="lha-ci-login__error">
       <span class="whitespace-pre">{{ errorMessage }}</span>
       <span v-if="errorDescription" class="mt-1 whitespace-pre">{{ errorDescription }}</span>
       <a
@@ -13,20 +13,36 @@
       </a>
     </Error>
 
-    <div
-      class="min-h-sm border-wp-background-400 dark:border-wp-background-100 bg-wp-background-100 dark:bg-wp-background-200 flex w-full flex-col overflow-hidden border md:m-8 md:w-3xl md:flex-row md:rounded-md"
-    >
-      <div class="bg-wp-primary-200 dark:bg-wp-primary-300 flex min-h-48 items-center justify-center md:w-3/5">
-        <WoodpeckerLogo preserveAspectRatio="xMinYMin slice" class="h-32 w-32 md:h-48 md:w-48" />
+    <section class="lha-ci-login__shell">
+      <div class="lha-ci-login__brand">
+        <div class="lha-ci-login__mark">
+          <WoodpeckerLogo preserveAspectRatio="xMidYMid meet" class="h-24 w-24" />
+        </div>
+        <div>
+          <p class="lha-ci-kicker">LHA Play</p>
+          <h1 class="lha-ci-login__title">CI</h1>
+          <p class="lha-ci-login__intro">Build, verify and release LHA Play from one focused delivery workspace.</p>
+        </div>
+        <div class="lha-ci-login__signals" aria-hidden="true">
+          <span>BUILD</span>
+          <span>VERIFY</span>
+          <span>RELEASE</span>
+        </div>
       </div>
-      <div class="flex min-h-48 flex-col items-center justify-center gap-4 p-4 text-center md:w-2/5">
-        <h1 class="text-wp-text-100 text-xl">{{ $t('login_to_woodpecker_with') }}</h1>
-        <div class="flex flex-col gap-2">
+
+      <div class="lha-ci-login__auth">
+        <div>
+          <p class="lha-ci-kicker">Authentication</p>
+          <h2 class="lha-ci-login__auth-title">{{ $t('login_to_woodpecker_with') }}</h2>
+          <p class="lha-ci-login__auth-copy">Use your connected source provider to enter the CI workspace.</p>
+        </div>
+
+        <div class="lha-ci-login__providers">
           <Button
             v-for="forge in forgesWithNameAndFavicon"
             :key="forge.id"
             :start-icon="forge.type === 'addon' ? 'repo' : forge.type"
-            class="whitespace-normal!"
+            class="lha-ci-login__provider whitespace-normal!"
             @click="authenticate(forge.id)"
           >
             <div class="mr-2 w-4">
@@ -42,8 +58,13 @@
             {{ forge.name }}
           </Button>
         </div>
+
+        <div class="lha-ci-login__footnote">
+          <span class="lha-ci-login__status-dot" />
+          <span>LHA Play CI</span>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
 </template>
 
@@ -92,7 +113,7 @@ onMounted(async () => {
 
 useWPTitle(computed(() => [i18n.t('login')]));
 
-const failedForgeFavicons = ref(new Set<number>()); // Track which favicons failed to load
+const failedForgeFavicons = ref(new Set<number>());
 
 const forgesWithNameAndFavicon = computed(() =>
   forges.value.map((forge) => {

@@ -1,32 +1,22 @@
 <template>
-  <Panel>
-    <div class="flex flex-col gap-y-4">
-      <!--  Runtime errors first: hard parse errors prevent any workflow from
-            running, so the two never compete, and next to parse warnings the
-            runtime error is the actual failure cause.  -->
-      <div v-if="runtimeErrorWorkflows.length > 0" class="flex flex-col gap-y-4">
-        <span class="text-lg font-bold">{{ $t('repo.pipeline.runtime_errors') }}</span>
-        <div
-          v-for="workflow in runtimeErrorWorkflows"
-          :key="workflow.id"
-          class="grid grid-cols-[minmax(10rem,auto)_3fr]"
-        >
-          <span class="flex items-start gap-x-2">
-            <Icon name="alert" class="text-wp-error-100 my-1 shrink-0" />
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <span class="my-1">
-              <code>{{ workflow.name }}</code>
-            </span>
-          </span>
-          <pre class="code-box break-words whitespace-pre-wrap">{{ workflow.error }}</pre>
-        </div>
+  <div>
+    <header class="lha-ci-workspace-head">
+      <div class="lha-ci-workspace-head__copy">
+        <p class="lha-ci-kicker">Pipeline diagnostics</p>
+        <h2 class="lha-ci-workspace-head__title">{{ hasErrors ? 'Errors and warnings' : 'Warnings' }}</h2>
+        <p class="lha-ci-workspace-head__text">Configuration and execution diagnostics reported for build #{{ pipeline.number }}.</p>
       </div>
+      <div class="lha-ci-workspace-head__context">
+        <span>Diagnostics</span>
+        <strong>{{ pipeline.errors?.length ?? 0 }}</strong>
+      </div>
+    </header>
 
-      <div v-if="pipeline!.errors && pipeline!.errors.length > 0" class="flex flex-col gap-y-4">
-        <span class="text-lg font-bold">{{ $t('repo.pipeline.parse_errors') }}</span>
-        <template v-for="(error, _index) in pipeline!.errors" :key="_index">
-          <div>
-            <div class="grid grid-cols-[minmax(10rem,auto)_3fr]">
+    <Panel class="lha-ci-workspace-card">
+      <div class="lha-ci-workspace-list">
+        <template v-for="(error, index) in pipeline.errors" :key="index">
+          <article class="rounded-lg border p-4">
+            <div class="grid gap-2 md:grid-cols-[minmax(10rem,auto)_3fr]">
               <span class="flex items-center gap-x-2">
                 <Icon
                   name="alert"
@@ -36,18 +26,14 @@
                     'text-wp-error-100': !error.is_warning,
                   }"
                 />
-                <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-                <span>
-                  <code>{{ error.type }}</code>
-                </span>
+                <code>{{ error.type }}</code>
               </span>
               <span
                 v-if="isLinterError(error) || isDeprecationError(error) || isBadHabitError(error)"
-                class="flex items-center gap-x-2 whitespace-nowrap"
+                class="flex min-w-0 items-center gap-x-2"
               >
-                <span>
-                  <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-                  <span v-if="error.data?.file" class="font-bold">{{ error.data?.file }}: </span>
+                <span class="min-w-0 truncate">
+                  <span v-if="error.data?.file" class="font-bold">{{ error.data.file }}: </span>
                   <span>{{ error.data?.field }}</span>
                 </span>
                 <DocsLink
@@ -56,19 +42,15 @@
                   :url="error.data?.docs || ''"
                 />
               </span>
-              <span v-else />
             </div>
-            <div class="col-start-2 grid grid-cols-[minmax(10rem,auto)_4fr]">
-              <span />
-              <span>
-                <RenderMarkdown :content="error.message" />
-              </span>
+            <div class="mt-3 md:pl-10">
+              <RenderMarkdown :content="error.message" />
             </div>
-          </div>
+          </article>
         </template>
       </div>
-    </div>
-  </Panel>
+    </Panel>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -82,12 +64,10 @@ import Panel from '~/components/layout/Panel.vue';
 import { requiredInject } from '~/compositions/useInjectProvide';
 import { useWPTitle } from '~/compositions/useWPTitle';
 import type { PipelineError } from '~/lib/api/types';
-import { pipelineHasErrorsToShow, workflowsWithErrors } from '~/lib/pipeline';
 
 const repo = requiredInject('repo');
 const pipeline = requiredInject('pipeline');
-
-const runtimeErrorWorkflows = computed(() => workflowsWithErrors(pipeline.value));
+const hasErrors = computed(() => pipeline.value.errors?.some((error) => !error.is_warning) ?? false);
 
 function isLinterError(error: PipelineError): error is PipelineError<{ file?: string; field: string }> {
   return error.type === 'linter';
@@ -106,7 +86,7 @@ function isBadHabitError(error: PipelineError): error is PipelineError<{ file?: 
 const { t } = useI18n();
 useWPTitle(
   computed(() => [
-    pipelineHasErrorsToShow(pipeline.value) ? t('repo.pipeline.errors') : t('repo.pipeline.warnings'),
+    hasErrors.value ? t('repo.pipeline.errors') : t('repo.pipeline.warnings'),
     t('repo.pipeline.pipeline', { pipelineId: pipeline.value.number }),
     repo.value.full_name,
   ]),
