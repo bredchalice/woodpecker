@@ -87,7 +87,11 @@
           <div
             v-if="group.isActualCommand"
             class="sticky -top-4 z-10 col-span-3 my-1 flex cursor-pointer items-center rounded-sm px-2 py-1 font-mono text-sm shadow-xs"
-            :class="[group.command && isSelected(group.command) ? 'bg-blue-900' : 'bg-wp-code-100']"
+            :class="[
+              group.command && isSelected(group.command)
+                ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-400/20'
+                : 'bg-wp-code-100',
+            ]"
             @click="toggleGroup(group.id)"
           >
             <Icon
@@ -116,7 +120,7 @@
                 :class="{
                   'bg-red-600/40 dark:bg-red-800/50': line.type === 'error',
                   'bg-yellow-600/40 dark:bg-yellow-800/50': line.type === 'warning',
-                  'bg-blue-600/30': isSelected(line),
+                  'bg-blue-500/10': isSelected(line),
                   underline: isSelected(line),
                 }"
               >
@@ -128,7 +132,7 @@
                 :class="{
                   'bg-red-600/40 dark:bg-red-800/50': line.type === 'error',
                   'bg-yellow-600/40 dark:bg-yellow-800/50': line.type === 'warning',
-                  'bg-blue-600/30': isSelected(line),
+                  'bg-blue-500/10': isSelected(line),
                 }"
                 v-html="line.text"
               />
@@ -138,7 +142,7 @@
                 :class="{
                   'bg-red-600/40 dark:bg-red-800/50': line.type === 'error',
                   'bg-yellow-600/40 dark:bg-yellow-800/50': line.type === 'warning',
-                  'bg-blue-600/30': isSelected(line),
+                  'bg-blue-500/10': isSelected(line),
                 }"
               >
                 {{ formatTime(line.time) }}
@@ -192,6 +196,7 @@ import { requiredInject } from '~/compositions/useInjectProvide';
 import useNotifications from '~/compositions/useNotifications';
 import useUserConfig from '~/compositions/useUserConfig';
 import type { Pipeline, PipelineConfig, PipelineStep, PipelineWorkflow } from '~/lib/api/types';
+import { classifyLogLine, stripLogAnsi } from '~/lib/logSeverity';
 import { debounce } from '~/lib/utils';
 
 interface LogLine {
@@ -258,24 +263,6 @@ const collapsedCommands = ref(new Set<number>());
 const commandRegex = /^\s*-\s(.+)$/gm;
 const specialCharsRegex = /[.*+?^${}()|[\]\\]/g;
 const matrixVariableRegex = /\\\$(\\\{\w+\\\})/g;
-const ansiEscapeRegex = /\x1B\[[0-?]*[ -/]*[@-~]/g;
-const zeroProblemRegex = /\b(?:0\s+(?:errors?|warnings?|failures?|failed)|no\s+(?:errors?|warnings?|failures?))\b/i;
-const errorPatterns = [
-  /(?:^|\s)(?:error|fatal|panic|exception)(?:\s|:|$)/i,
-  /^FAIL(?:\s|$)/,
-  /\b(?:failed|failure)\b/i,
-  /\berror\s+TS\d+:/i,
-  /\b(?:npm|yarn|pnpm)\s+ERR!/i,
-  /\b[1-9]\d*\s+errors?\b/i,
-  /\b(?:exit(?:ed)?|returned)\s+(?:with\s+)?(?:code|status)\s+[1-9]\d*\b/i,
-  /\bcommand\b.*\bfailed\b/i,
-  /\bprocess\b.*\b(?:failed|exited)\b/i,
-];
-const warningPatterns = [
-  /(?:^|\s)warn(?:ing)?(?:\s|:|$)/i,
-  /\b[1-9]\d*\s+warnings?\b/i,
-  /\bdeprecat(?:ed|ion)\b/i,
-];
 
 const stepFailed = computed(() => step.value?.state === 'failure' || step.value?.state === 'error');
 const semanticErrorCount = computed(() => log.value?.filter((line) => line.type === 'error').length ?? 0);
@@ -283,16 +270,8 @@ const semanticWarningCount = computed(() => log.value?.filter((line) => line.typ
 const failureHint = computed(() => {
   if (!stepFailed.value) return '';
   const errorLine = [...(log.value ?? [])].reverse().find((line) => line.type === 'error');
-  return errorLine?.rawText?.replace(ansiEscapeRegex, '').trim() ?? '';
+  return errorLine?.rawText ? stripLogAnsi(errorLine.rawText).trim() : '';
 });
-
-function classifyLogLine(rawText: string): LogLine['type'] {
-  const text = rawText.replace(ansiEscapeRegex, '').trim();
-  if (!text || text.startsWith('+ ') || zeroProblemRegex.test(text)) return null;
-  if (errorPatterns.some((pattern) => pattern.test(text))) return 'error';
-  if (warningPatterns.some((pattern) => pattern.test(text))) return 'warning';
-  return null;
-}
 
 const knownCommandMatchers = computed(() => {
   if (!pipelineConfigs.value) return [];
