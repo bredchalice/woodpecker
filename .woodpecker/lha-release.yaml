@@ -12,12 +12,8 @@ steps:
         RELEASE_TAG="$(TZ=Europe/Stockholm date '+%Y.%m.%d')"
         test -n "$CI_COMMIT_SHA"
 
-        # plugin-kaniko reads .tags from the workspace. The dated tag is the
-        # human-facing release; SHA and latest keep traceability/convenience.
         printf '%s\n%s\nlatest\n' "$RELEASE_TAG" "$CI_COMMIT_SHA" > .tags
 
-        # Keep the version reported by the fork binaries aligned with the
-        # registry release tag without requiring a manually created Git tag.
         awk -v release="$RELEASE_TAG" '
           /^ARG LHA_WOODPECKER_VERSION=/ {
             print "ARG LHA_WOODPECKER_VERSION=" release
