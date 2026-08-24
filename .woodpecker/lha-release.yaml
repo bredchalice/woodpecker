@@ -1,45 +1,55 @@
 when:
-  - event: tag
+  - event: push
+    branch: v3.18-lha
 
 steps:
-  - name: validate lha release tag
-    image: alpine/git
+  - name: prepare lha release
+    image: alpine:3.23
     commands:
       - |
         set -eu
-        LHA_VERSION="$CI_COMMIT_TAG"
-        case "$LHA_VERSION" in
-          v3.17-lha-[0-9]*.[0-9]*.[0-9]*) ;;
-          *) echo "Invalid LHA release tag: $LHA_VERSION (expected v3.17-lha-<semver>)" >&2; exit 1 ;;
-        esac
+        apk add --no-cache tzdata
+        RELEASE_TAG="$(TZ=Europe/Stockholm date '+%Y.%m.%d')"
         test -n "$CI_COMMIT_SHA"
-        BRANCH_SHA="$(git ls-remote origin refs/heads/v3.17-lha | awk '{print $1}')"
-        test -n "$BRANCH_SHA"
-        if [ "$CI_COMMIT_SHA" != "$BRANCH_SHA" ]; then
-          echo "Release tag $LHA_VERSION points to $CI_COMMIT_SHA, but v3.17-lha currently points to $BRANCH_SHA." >&2
-          echo "Refusing to move v3.17-lha/latest image aliases backwards. Tag the current v3.17-lha tip instead." >&2
-          exit 1
-        fi
-        echo "LHA Play CI release: $LHA_VERSION"
+
+        # plugin-kaniko reads .tags from the workspace. The dated tag is the
+        # human-facing release; SHA and latest keep traceability/convenience.
+        printf '%s\n%s\nlatest\n' "$RELEASE_TAG" "$CI_COMMIT_SHA" > .tags
+
+        # Keep the version reported by the fork binaries aligned with the
+        # registry release tag without requiring a manually created Git tag.
+        awk -v release="$RELEASE_TAG" '
+          /^ARG LHA_WOODPECKER_VERSION=/ {
+            print "ARG LHA_WOODPECKER_VERSION=" release
+            next
+          }
+          { print }
+        ' docker/Dockerfile.server.fork > docker/Dockerfile.server.fork.tmp
+        mv docker/Dockerfile.server.fork.tmp docker/Dockerfile.server.fork
+
+        awk -v release="$RELEASE_TAG" -v sha="$CI_COMMIT_SHA" '
+          { print }
+          $0 == "ARG TARGETOS TARGETARCH CI_COMMIT_SHA LHA_WOODPECKER_VERSION" {
+            print "ARG LHA_WOODPECKER_VERSION=" release
+            print "ARG CI_COMMIT_SHA=" sha
+          }
+        ' docker/Dockerfile.agent.alpine.multiarch > docker/Dockerfile.agent.alpine.multiarch.tmp
+        mv docker/Dockerfile.agent.alpine.multiarch.tmp docker/Dockerfile.agent.alpine.multiarch
+
+        printf '%s\n' "$RELEASE_TAG" > .lha-release-version
+        echo "LHA Woodpecker registry release: $RELEASE_TAG"
         echo "Source commit: $CI_COMMIT_SHA"
-        echo "v3.17-lha tip: $BRANCH_SHA"
+        echo "Registry tags: $RELEASE_TAG, $CI_COMMIT_SHA, latest"
 
   - name: publish lha server
     image: woodpeckerci/plugin-kaniko
     depends_on:
-      - validate lha release tag
+      - prepare lha release
     settings:
       registry: registry.lhaplay.com
       repo: woodpecker/server
       dockerfile: docker/Dockerfile.server.fork
       context: .
-      tags:
-        - ${CI_COMMIT_SHA}
-        - ${CI_COMMIT_TAG}
-        - v3.17-lha
-        - latest
-      build_args:
-        - LHA_WOODPECKER_VERSION=${CI_COMMIT_TAG}
       username: lha-registry
       password:
         from_secret: registry_password
@@ -47,125 +57,28 @@ steps:
   - name: publish lha agent
     image: woodpeckerci/plugin-kaniko
     depends_on:
-      - validate lha release tag
+      - prepare lha release
     settings:
       registry: registry.lhaplay.com
       repo: woodpecker/agent
       dockerfile: docker/Dockerfile.agent.alpine.multiarch
       context: .
-      tags:
-        - ${CI_COMMIT_SHA}
-        - ${CI_COMMIT_TAG}
-        - v3.17-lha
-        - latest
-      build_args:
-        - LHA_WOODPECKER_VERSION=${CI_COMMIT_TAG}
-        - CI_COMMIT_SHA=${CI_COMMIT_SHA}
       username: lha-registry
       password:
         from_secret: registry_password
 
-  - name: update gitops deployment
-    image: python:3.13-alpine
-    depends_on:
-      - publish lha server
-      - publish lha agent
-    environment:
-      GITOPS_TOKEN:
-        from_secret: gitops_token
-    commands:
-      - |
-        set -eu
-        python - <<'PY'
-        import base64
-        import json
-        import os
-        import re
-        import urllib.error
-        import urllib.request
-
-        token = os.environ.get("GITOPS_TOKEN", "")
-        release_tag = os.environ.get("CI_COMMIT_TAG", "")
-        if not token:
-            raise SystemExit("Missing Woodpecker secret: gitops_token")
-        if not release_tag:
-            raise SystemExit("Missing CI_COMMIT_TAG")
-
-        read_url = "https://api.github.com/repos/bredchalice/lha-infrastructure-versions/contents/apps/woodpecker/kustomization.yaml?ref=master"
-        write_url = "https://api.github.com/repos/bredchalice/lha-infrastructure-versions/contents/apps/woodpecker/kustomization.yaml"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {token}",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "LHA-Play-CI",
-        }
-
-        print("Reading current GitOps desired version...")
-        try:
-            with urllib.request.urlopen(urllib.request.Request(read_url, headers=headers), timeout=30) as response:
-                current = json.load(response)
-        except urllib.error.HTTPError as error:
-            body = error.read().decode("utf-8", "replace")
-            raise SystemExit(f"GitHub API read failed: HTTP {error.code}: {body}") from error
-
-        content = base64.b64decode(current["content"]).decode("utf-8")
-        image_names = (
-            "registry.lhaplay.com/woodpecker/server",
-            "registry.lhaplay.com/woodpecker/agent",
-        )
-        updated = content
-        replacements = 0
-        for image_name in image_names:
-            pattern = rf"(^\s*- name: {re.escape(image_name)}\s*$\n\s*newTag:)\s*[^\s#]+"
-            updated, count = re.subn(pattern, rf"\1 {release_tag}", updated, count=1, flags=re.MULTILINE)
-            replacements += count
-
-        if replacements != 2:
-            raise SystemExit(f"Expected to update exactly 2 Woodpecker image tags, updated {replacements}")
-
-        if updated == content:
-            print(f"GitOps already points at {release_tag}")
-            raise SystemExit(0)
-
-        payload = json.dumps({
-            "message": f"deploy(woodpecker): {release_tag}",
-            "content": base64.b64encode(updated.encode("utf-8")).decode("ascii"),
-            "sha": current["sha"],
-            "branch": "master",
-            "committer": {
-                "name": "LHA Play CI",
-                "email": "ci@lhaplay.com",
-            },
-        }).encode("utf-8")
-
-        print(f"Updating GitOps desired version to {release_tag}...")
-        request = urllib.request.Request(
-            write_url,
-            data=payload,
-            headers={**headers, "Content-Type": "application/json"},
-            method="PUT",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                result = json.load(response)
-        except urllib.error.HTTPError as error:
-            body = error.read().decode("utf-8", "replace")
-            raise SystemExit(f"GitHub API update failed: HTTP {error.code}: {body}") from error
-
-        commit_sha = result.get("commit", {}).get("sha", "unknown")
-        print(f"GitOps desired version updated to {release_tag} in commit {commit_sha}; Argo CD will reconcile it.")
-        PY
-
   - name: release summary
     image: alpine:3.23
     depends_on:
-      - update gitops deployment
+      - publish lha server
+      - publish lha agent
     commands:
       - |
         set -eu
-        echo "LHA Play CI $CI_COMMIT_TAG published and promoted from Git tag."
+        RELEASE_TAG="$(cat .lha-release-version)"
+        echo "LHA Woodpecker $RELEASE_TAG published to registry.lhaplay.com."
         echo "Source: $CI_COMMIT_SHA"
-        echo "Server tags: $CI_COMMIT_TAG, $CI_COMMIT_SHA, v3.17-lha, latest"
-        echo "Agent tags:  $CI_COMMIT_TAG, $CI_COMMIT_SHA, v3.17-lha, latest"
-        echo "GitOps: apps/woodpecker/kustomization.yaml -> $CI_COMMIT_TAG"
-        echo "Argo CD owns the Kubernetes rollout."
+        echo "Server: registry.lhaplay.com/woodpecker/server:$RELEASE_TAG"
+        echo "Agent:  registry.lhaplay.com/woodpecker/agent:$RELEASE_TAG"
+        echo "No GitHub release tag was required."
+        echo "No GitOps or Kubernetes deployment was performed."
