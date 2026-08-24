@@ -207,15 +207,18 @@
   border-bottom: 1px solid var(--lha-console-border);
 }
 
+/* Command rows are sticky. They must use the solid console background so
+ * scrolled log text cannot bleed through underneath them. Selection is shown
+ * by the existing ring, not by tinting the command-row background. */
 .code-box-log .sticky[class*='col-span-3'] {
   border: 1px solid var(--lha-console-border);
-  background-color: transparent !important;
+  background-color: var(--color-wp-code-100) !important;
   color: var(--lha-console-command);
   font-weight: 650;
 }
 
 .code-box-log .sticky[class*='col-span-3']:hover {
-  background-color: transparent !important;
+  background-color: var(--color-wp-code-100) !important;
 }
 
 .code-box-log a[href^='#L'] {
