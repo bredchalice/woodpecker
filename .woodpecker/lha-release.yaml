@@ -1,0 +1,84 @@
+when:
+  - event: push
+    branch: 'v*-lha'
+
+steps:
+  - name: prepare lha release
+    image: alpine:3.23
+    commands:
+      - |
+        set -eu
+        apk add --no-cache tzdata
+        case "$CI_COMMIT_BRANCH" in
+          v*-lha) ;;
+          *) echo "Refusing to publish from non-release branch: $CI_COMMIT_BRANCH" >&2; exit 1 ;;
+        esac
+        RELEASE_TAG="${CI_COMMIT_BRANCH}-$(TZ=Europe/Stockholm date '+%Y.%m.%d')"
+        test -n "$CI_COMMIT_SHA"
+
+        printf '%s\n%s\nlatest\n' "$RELEASE_TAG" "$CI_COMMIT_SHA" > .tags
+
+        awk -v release="$RELEASE_TAG" '
+          /^ARG LHA_WOODPECKER_VERSION=/ {
+            print "ARG LHA_WOODPECKER_VERSION=" release
+            next
+          }
+          { print }
+        ' docker/Dockerfile.server.fork > docker/Dockerfile.server.fork.tmp
+        mv docker/Dockerfile.server.fork.tmp docker/Dockerfile.server.fork
+
+        awk -v release="$RELEASE_TAG" -v sha="$CI_COMMIT_SHA" '
+          { print }
+          $0 == "ARG TARGETOS TARGETARCH CI_COMMIT_SHA LHA_WOODPECKER_VERSION" {
+            print "ARG LHA_WOODPECKER_VERSION=" release
+            print "ARG CI_COMMIT_SHA=" sha
+          }
+        ' docker/Dockerfile.agent.alpine.multiarch > docker/Dockerfile.agent.alpine.multiarch.tmp
+        mv docker/Dockerfile.agent.alpine.multiarch.tmp docker/Dockerfile.agent.alpine.multiarch
+
+        printf '%s\n' "$RELEASE_TAG" > .lha-release-version
+        echo "LHA Woodpecker registry release: $RELEASE_TAG"
+        echo "Source commit: $CI_COMMIT_SHA"
+        echo "Registry tags: $RELEASE_TAG, $CI_COMMIT_SHA, latest"
+
+  - name: publish lha server
+    image: woodpeckerci/plugin-kaniko
+    depends_on:
+      - prepare lha release
+    settings:
+      registry: registry.lhaplay.com
+      repo: woodpecker/server
+      dockerfile: docker/Dockerfile.server.fork
+      context: .
+      username: lha-registry
+      password:
+        from_secret: registry_password
+
+  - name: publish lha agent
+    image: woodpeckerci/plugin-kaniko
+    depends_on:
+      - prepare lha release
+    settings:
+      registry: registry.lhaplay.com
+      repo: woodpecker/agent
+      dockerfile: docker/Dockerfile.agent.alpine.multiarch
+      context: .
+      username: lha-registry
+      password:
+        from_secret: registry_password
+
+  - name: release summary
+    image: alpine:3.23
+    depends_on:
+      - publish lha server
+      - publish lha agent
+    commands:
+      - |
+        set -eu
+        RELEASE_TAG="$(cat .lha-release-version)"
+        echo "LHA Woodpecker $RELEASE_TAG published to registry.lhaplay.com."
+        echo "Source: $CI_COMMIT_SHA"
+        echo "Server: registry.lhaplay.com/woodpecker/server:$RELEASE_TAG"
+        echo "Agent:  registry.lhaplay.com/woodpecker/agent:$RELEASE_TAG"
+        echo "No GitHub release tag was required."
+        echo "No GitOps or Kubernetes deployment was performed."
